@@ -1,0 +1,12 @@
+# Folder lingkungan virtual Python
+.venv/
+
+# File rahasia Google
+server/client_secret.json
+server/token.json
+server/credentials.json
+
+# File cache Python
+__pycache__/
+server/__pycache__/
+*.pyc
