@@ -1,9 +1,11 @@
 import os.path
+import io
 import gspread
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -15,9 +17,11 @@ import config
 
 class GoogleServiceProvider:
     def __init__(self):
+        # Menambahkan izin untuk Google Drive
         self.scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/gmail.send'
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/drive.file'
         ]
         self.creds = None
         if os.path.exists('token.json'):
@@ -35,6 +39,29 @@ class GoogleServiceProvider:
         self.sheet = self.gspread_client.open_by_key(config.SPREADSHEET_ID)
         self.data_entry_sheet = self.sheet.worksheet(config.DATA_ENTRY_SHEET_NAME)
         self.gmail_service = build('gmail', 'v1', credentials=self.creds)
+        self.drive_service = build('drive', 'v3', credentials=self.creds)
+
+    def upload_pdf_to_drive(self, pdf_bytes, filename):
+        """Mengunggah file PDF ke folder Google Drive dan mengembalikan link."""
+        file_metadata = {
+            'name': filename,
+            'parents': [config.PDF_STORAGE_FOLDER_ID]
+        }
+        media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
+        
+        file = self.drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+
+        self.drive_service.permissions().create(
+            fileId=file.get('id'),
+            body={'type': 'anyone', 'role': 'reader'}
+        ).execute()
+
+        print(f"PDF uploaded successfully. Link: {file.get('webViewLink')}")
+        return file.get('webViewLink')
 
     def check_user_submissions(self, email):
         headers = self.data_entry_sheet.row_values(1)
@@ -118,8 +145,21 @@ class GoogleServiceProvider:
             return send_message
         except Exception as e:
             print(f"An error occurred while sending email: {e}")
-            raise e # Lemparkan lagi error agar bisa ditangkap oleh app.py
+            raise e
     
+    def copy_to_approved_sheet(self, row_data):
+        """Menyalin satu baris data ke sheet 'Form3'."""
+        try:
+            approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
+            headers = self.get_sheet_headers(config.APPROVED_DATA_SHEET_NAME)
+            data_to_append = [row_data.get(header, "") for header in headers]
+            approved_sheet.append_row(data_to_append)
+            print(f"Data successfully copied to {config.APPROVED_DATA_SHEET_NAME}.")
+            return True
+        except Exception as e:
+            print(f"Failed to copy data to approved sheet: {e}")
+            return False
+
     def delete_row(self, worksheet_name, row_index):
         """Menghapus baris tertentu dari sebuah worksheet."""
         try:
