@@ -5,9 +5,7 @@ load_dotenv()
 
 # --- Google & Spreadsheet Configuration ---
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "1LA1TlhgltT2bqSN3H-LYasq9PtInVlqq98VPru8txoo")
-
-# ▼▼▼ ID FOLDER GOOGLE DRIVE ANDA SUDAH DIMASUKKAN DI SINI ▼▼▼
-PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV"
+PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV" # ID Folder Google Drive Anda
 
 # Nama-nama sheet yang digunakan
 DATA_ENTRY_SHEET_NAME = "Form2"

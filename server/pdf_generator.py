@@ -1,4 +1,4 @@
-## file: server/pdf_generator.py
+## file: server/pdf_generator.py (Lengkap & Final)
 
 import os
 from weasyprint import HTML
@@ -26,17 +26,13 @@ def get_nama_lengkap_by_email(google_provider, email):
     return ""
 
 def create_approval_details_block(google_provider, approver_email, approval_time_str):
-    """Fungsi ini sekarang hanya membuat blok HTML untuk detail persetujuan."""
     approver_name = get_nama_lengkap_by_email(google_provider, approver_email)
-    
     try:
         approval_dt = datetime.fromisoformat(approval_time_str)
         formatted_time = approval_dt.strftime('%d %B %Y, %H:%M')
     except (ValueError, TypeError):
         formatted_time = "Waktu tidak tersedia"
-        
     name_display = f"<strong>{approver_name}</strong><br>" if approver_name else ""
-
     return f"""
     <div class="approval-details">
         {name_display}
@@ -46,8 +42,6 @@ def create_approval_details_block(google_provider, approver_email, approval_time
     """
 
 def create_pdf_from_data(google_provider, form_data):
-    """Menghasilkan file PDF dari data formulir."""
-    
     grouped_items = {}
     grand_total = 0
     for i in range(1, 51):
@@ -67,10 +61,8 @@ def create_pdf_from_data(google_provider, form_data):
     ppn = grand_total * 0.11
     final_grand_total = grand_total + ppn
 
-    # Menyiapkan variabel untuk detail persetujuan
     coordinator_approval_details = ""
     manager_approval_details = ""
-
     if form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER):
         coordinator_approval_details = create_approval_details_block(
             google_provider, form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER),
@@ -82,6 +74,23 @@ def create_pdf_from_data(google_provider, form_data):
             form_data.get(config.COLUMN_NAMES.MANAGER_APPROVAL_TIME)
         )
     
+    # ▼▼▼ LOGIKA BARU UNTUK MEMFORMAT TANGGAL PENGAJUAN ▼▼▼
+    tanggal_pengajuan_str = ''
+    timestamp_from_data = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
+    if timestamp_from_data:
+        try:
+            # Coba format ISO (saat pertama kali submit dari Python)
+            dt_object = datetime.fromisoformat(timestamp_from_data)
+            tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
+        except (ValueError, TypeError):
+            # Jika gagal, coba format umum dari Google Sheets (misal: '7/3/2025 14:45:10')
+            try:
+                dt_object = datetime.strptime(timestamp_from_data, '%m/%d/%Y %H:%M:%S')
+                tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
+            except (ValueError, TypeError):
+                # Jika masih gagal, tampilkan apa adanya (bagian tanggalnya saja)
+                tanggal_pengajuan_str = str(timestamp_from_data).split(" ")[0]
+            
     logo_path = 'file:///' + os.path.abspath(os.path.join('static', 'Alfamart-Emblem.png'))
 
     html_string = render_template(
@@ -91,7 +100,8 @@ def create_pdf_from_data(google_provider, form_data):
         JABATAN=config.JABATAN,
         coordinator_approval_details=coordinator_approval_details,
         manager_approval_details=manager_approval_details,
-        format_rupiah=format_rupiah
+        format_rupiah=format_rupiah,
+        tanggal_pengajuan=tanggal_pengajuan_str # Kirim tanggal yang sudah diformat
     )
     
     return HTML(string=html_string).write_pdf()

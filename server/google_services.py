@@ -17,7 +17,6 @@ import config
 
 class GoogleServiceProvider:
     def __init__(self):
-        # Menambahkan izin untuk Google Drive
         self.scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/gmail.send',
@@ -42,54 +41,31 @@ class GoogleServiceProvider:
         self.drive_service = build('drive', 'v3', credentials=self.creds)
 
     def upload_pdf_to_drive(self, pdf_bytes, filename):
-        """Mengunggah file PDF ke folder Google Drive dan mengembalikan link."""
-        file_metadata = {
-            'name': filename,
-            'parents': [config.PDF_STORAGE_FOLDER_ID]
-        }
+        file_metadata = {'name': filename, 'parents': [config.PDF_STORAGE_FOLDER_ID]}
         media = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
-        
-        file = self.drive_service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id, webViewLink'
-        ).execute()
-
-        self.drive_service.permissions().create(
-            fileId=file.get('id'),
-            body={'type': 'anyone', 'role': 'reader'}
-        ).execute()
-
-        print(f"PDF uploaded successfully. Link: {file.get('webViewLink')}")
+        file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+        self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
     def check_user_submissions(self, email):
-        headers = self.data_entry_sheet.row_values(1)
-        all_data = self.data_entry_sheet.get_all_values()
-        email_col = headers.index(config.COLUMN_NAMES.EMAIL_PEMBUAT)
-        status_col = headers.index(config.COLUMN_NAMES.STATUS)
-        lokasi_col = headers.index(config.COLUMN_NAMES.LOKASI)
-        timestamp_col = headers.index(config.COLUMN_NAMES.TIMESTAMP)
+        all_data = self.data_entry_sheet.get_all_records()
         active_codes = {"pending": [], "approved": []}
         last_rejected_data = None
-        last_rejected_timestamp = datetime.min.replace(tzinfo=timezone.utc)
-        for row in all_data[1:]:
-            if len(row) > email_col and row[email_col] and row[email_col].strip() == email:
-                status = row[status_col].strip() if len(row) > status_col else ""
-                lokasi = row[lokasi_col].strip() if len(row) > lokasi_col else ""
+        
+        for record in reversed(all_data):
+            if record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "").strip() == email:
+                status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
+                
+                if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
+                    last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
+
+                lokasi = record.get(config.COLUMN_NAMES.LOKASI, "").strip()
                 if not lokasi: continue
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
                     if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
-                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                    try:
-                        dt_object = datetime.fromisoformat(row[timestamp_col].replace("Z", "+00:00"))
-                        if dt_object.tzinfo is None: dt_object = dt_object.replace(tzinfo=timezone.utc)
-                        if dt_object > last_rejected_timestamp:
-                            last_rejected_timestamp = dt_object
-                            last_rejected_data = {header.replace(" ", "_"): value for header, value in zip(headers, row)}
-                    except (ValueError, IndexError): continue
+        
         return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
 
     def get_sheet_headers(self, worksheet_name):
@@ -103,8 +79,10 @@ class GoogleServiceProvider:
         return len(worksheet.get_all_values())
 
     def get_row_data(self, row_index):
-        values = self.data_entry_sheet.row_values(row_index)
-        return dict(zip(self.data_entry_sheet.row_values(1), values))
+        records = self.data_entry_sheet.get_all_records()
+        if row_index > 1 and row_index <= len(records) + 1:
+            return records[row_index - 2]
+        return {}
 
     def update_cell(self, row_index, column_name, value):
         try:
@@ -128,8 +106,7 @@ class GoogleServiceProvider:
     def send_email(self, to, subject, html_body, pdf_attachment_bytes=None, pdf_filename="RAB.pdf", cc=None):
         try:
             message = MIMEMultipart()
-            message['to'] = to
-            message['subject'] = subject
+            message['to'] = to; message['subject'] = subject
             if cc: message['cc'] = ', '.join(cc)
             message.attach(MIMEText(html_body, 'html'))
             if pdf_attachment_bytes:
@@ -148,7 +125,6 @@ class GoogleServiceProvider:
             raise e
     
     def copy_to_approved_sheet(self, row_data):
-        """Menyalin satu baris data ke sheet 'Form3'."""
         try:
             approved_sheet = self.sheet.worksheet(config.APPROVED_DATA_SHEET_NAME)
             headers = self.get_sheet_headers(config.APPROVED_DATA_SHEET_NAME)
@@ -161,7 +137,6 @@ class GoogleServiceProvider:
             return False
 
     def delete_row(self, worksheet_name, row_index):
-        """Menghapus baris tertentu dari sebuah worksheet."""
         try:
             worksheet = self.sheet.worksheet(worksheet_name)
             worksheet.delete_rows(row_index)

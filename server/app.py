@@ -35,16 +35,20 @@ def submit_form():
 
     new_row_index = None
     try:
-        # ▼▼▼ FORMAT NAMA FILE BARU (TAHAP 1) ▼▼▼
+        # ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
+        # 1. Tambahkan Timestamp dan Status di awal
+        data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
+        data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now().isoformat()
+
         jenis_toko = data.get(config.COLUMN_NAMES.PROYEK, 'N_A')
         kode_toko = data.get(config.COLUMN_NAMES.LOKASI, 'N_A')
         pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
         
+        # 2. Buat PDF setelah Timestamp ditambahkan ke data
         pdf_bytes = create_pdf_from_data(google_provider, data)
-        pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         
-        data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
-        data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now().isoformat()
+        # 3. Lanjutkan proses seperti biasa
+        pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
         
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
@@ -98,76 +102,79 @@ def handle_approval():
         cabang = row_data.get(config.COLUMN_NAMES.CABANG)
         jenis_toko = row_data.get(config.COLUMN_NAMES.PROYEK, 'N_A')
         kode_toko = row_data.get(config.COLUMN_NAMES.LOKASI, 'N_A')
+        creator_email = row_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
 
-        if level == 'coordinator':
-            if action == 'approve':
-                google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
+        if action == 'reject':
+            new_status = ""
+            rejected_by_level = ""
+            if level == 'coordinator':
+                new_status = config.STATUS.REJECTED_BY_COORDINATOR
+                rejected_by_level = "Koordinator"
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
-                
-                manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.MANAGER)
-                if manager_email:
-                    row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
-                    row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
-                    base_url = request.url_root
-                    approval_url_manager = f"{base_url}handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
-                    rejection_url_manager = f"{base_url}handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
-                    email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
-                    pdf_bytes = create_pdf_from_data(google_provider, row_data)
-                    pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf" # Nama file konsisten
-                    google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
-                
-                return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat dan permintaan diteruskan ke Manajer.', theme_color='#28a745', icon='✔', logo_url=logo_url)
+            elif level == 'manager':
+                new_status = config.STATUS.REJECTED_BY_MANAGER
+                rejected_by_level = "Manajer"
+                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
+                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
+
+            google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, new_status)
             
-            elif action == 'reject':
-                google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.REJECTED_BY_COORDINATOR)
-                google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
-                google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
-                # ▼▼▼ FORMAT NAMA FILE BARU (DITOLAK) ▼▼▼
-                pdf_filename = f"DITOLAK_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-                # (Anda bisa menambahkan logika untuk menyimpan PDF yang ditolak ke Drive di sini jika perlu)
-                return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
+            if creator_email:
+                subject = f"[DITOLAK] Pengajuan RAB Proyek: {jenis_toko}"
+                body = f"<p>Yth. Bapak/Ibu,</p><p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b> oleh {rejected_by_level} ({approver}).</p><p>Silakan buka kembali form, masukkan kode toko yang sama untuk memuat ulang data terakhir, lakukan revisi, dan kirim ulang jika diperlukan.</p>"
+                google_provider.send_email(to=creator_email, subject=subject, html_body=body)
+            
+            return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
+
+        elif level == 'coordinator' and action == 'approve':
+            google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
+            google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
+            google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
+            
+            manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.MANAGER)
+            if manager_email:
+                row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
+                row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
+                base_url = request.url_root
+                approval_url_manager = f"{base_url}handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
+                rejection_url_manager = f"{base_url}handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
+                email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
+                pdf_bytes = create_pdf_from_data(google_provider, row_data)
+                pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
+                google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
+            
+            return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
         
-        elif level == 'manager':
-            if action == 'approve':
-                google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.APPROVED)
-                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
-                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
-                
-                row_data[config.COLUMN_NAMES.STATUS] = config.STATUS.APPROVED
-                row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
-                row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
-                
-                # ▼▼▼ FORMAT NAMA FILE BARU (DISETUJUI) ▼▼▼
-                final_pdf_bytes = create_pdf_from_data(google_provider, row_data)
-                final_pdf_filename = f"DISETUJUI_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-                
-                final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
-                
-                google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
-                row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
-                
-                google_provider.copy_to_approved_sheet(row_data)
-
-                support_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.SUPPORT)
-                manager_email = approver
-                coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
-                if support_email:
-                    cc_list = list(filter(None, set([manager_email, coordinator_email])))
-                    subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
-                    email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
-                    google_provider.send_email(to=support_email, cc=cc_list, subject=subject, html_body=email_body_html, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
-                
-                return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses dan notifikasi final telah dikirim.', theme_color='#28a745', icon='✔', logo_url=logo_url)
+        elif level == 'manager' and action == 'approve':
+            google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.APPROVED)
+            google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
+            google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
             
-            elif action == 'reject':
-                google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.REJECTED_BY_MANAGER)
-                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
-                google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
-                # ▼▼▼ FORMAT NAMA FILE BARU (DITOLAK) ▼▼▼
-                pdf_filename = f"DITOLAK_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-                # (Anda bisa menambahkan logika untuk menyimpan PDF yang ditolak ke Drive di sini jika perlu)
-                return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
+            row_data[config.COLUMN_NAMES.STATUS] = config.STATUS.APPROVED
+            row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
+            row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
+            
+            final_pdf_bytes = create_pdf_from_data(google_provider, row_data)
+            final_pdf_filename = f"DISETUJUI_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
+            
+            final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
+            
+            google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
+            row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
+            
+            google_provider.copy_to_approved_sheet(row_data)
+
+            support_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.SUPPORT)
+            manager_email = approver
+            coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
+            if support_email:
+                cc_list = list(filter(None, set([manager_email, coordinator_email])))
+                subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
+                email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
+                google_provider.send_email(to=support_email, cc=cc_list, subject=subject, html_body=email_body_html, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
+            
+            return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:
         traceback.print_exc()
