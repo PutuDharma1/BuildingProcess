@@ -24,8 +24,10 @@ def check_status():
         status_data = google_provider.check_user_submissions(email)
         return jsonify(status_data), 200
     except Exception as e:
+        # Ini akan menangkap error dari gspread dan mengirim pesan yang lebih jelas
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        error_message = f"Server error while checking status: {str(e)}. Please check for empty or duplicate headers in your 'Form2' sheet."
+        return jsonify({"error": error_message, "status": "error"}), 500
 
 @app.route('/submit', methods=['POST'])
 def submit_form():
@@ -35,28 +37,26 @@ def submit_form():
 
     new_row_index = None
     try:
-        # ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
-        # 1. Tambahkan Timestamp dan Status di awal
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
         data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now().isoformat()
-
+        
         jenis_toko = data.get(config.COLUMN_NAMES.PROYEK, 'N_A')
         kode_toko = data.get(config.COLUMN_NAMES.LOKASI, 'N_A')
         pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
         
-        # 2. Buat PDF setelah Timestamp ditambahkan ke data
         pdf_bytes = create_pdf_from_data(google_provider, data)
-        
-        # 3. Lanjutkan proses seperti biasa
         pdf_link = google_provider.upload_pdf_to_drive(pdf_bytes, pdf_filename)
         data[config.COLUMN_NAMES.LINK_PDF] = pdf_link
         
         new_row_index = google_provider.append_to_sheet(data, config.DATA_ENTRY_SHEET_NAME)
         
         cabang = data.get(config.COLUMN_NAMES.CABANG)
+        if not cabang:
+             raise Exception(f"Field 'Cabang' is empty. Cannot find Coordinator.")
+
         coordinator_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.KOORDINATOR)
         if not coordinator_email:
-            raise Exception(f"Coordinator email for branch {cabang} not found.")
+            raise Exception(f"Coordinator email for branch '{cabang}' not found. Please check the 'Cabang' sheet.")
 
         base_url = request.url_root
         approval_url = f"{base_url}handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
@@ -73,7 +73,7 @@ def submit_form():
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         
         traceback.print_exc()
-        return jsonify({"status": "error", "message": f"An error occurred: {str(e)}"}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/handle_approval', methods=['GET'])
 def handle_approval():
@@ -117,21 +117,17 @@ def handle_approval():
                 rejected_by_level = "Manajer"
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
-
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, new_status)
-            
             if creator_email:
                 subject = f"[DITOLAK] Pengajuan RAB Proyek: {jenis_toko}"
                 body = f"<p>Yth. Bapak/Ibu,</p><p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b> oleh {rejected_by_level} ({approver}).</p><p>Silakan buka kembali form, masukkan kode toko yang sama untuk memuat ulang data terakhir, lakukan revisi, dan kirim ulang jika diperlukan.</p>"
                 google_provider.send_email(to=creator_email, subject=subject, html_body=body)
-            
             return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
 
         elif level == 'coordinator' and action == 'approve':
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
             google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
             google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
-            
             manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.MANAGER)
             if manager_email:
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
@@ -143,28 +139,21 @@ def handle_approval():
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
                 google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
-            
             return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
         
         elif level == 'manager' and action == 'approve':
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.APPROVED)
             google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
             google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
-            
             row_data[config.COLUMN_NAMES.STATUS] = config.STATUS.APPROVED
             row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
             row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
-            
             final_pdf_bytes = create_pdf_from_data(google_provider, row_data)
             final_pdf_filename = f"DISETUJUI_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-            
             final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
-            
             google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
             row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
-            
             google_provider.copy_to_approved_sheet(row_data)
-
             support_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.SUPPORT)
             manager_email = approver
             coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
@@ -173,7 +162,6 @@ def handle_approval():
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
                 email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
                 google_provider.send_email(to=support_email, cc=cc_list, subject=subject, html_body=email_body_html, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
-            
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:

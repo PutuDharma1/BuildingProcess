@@ -1,3 +1,5 @@
+## file: server/google_services.py (Final & Robust Version)
+
 import os.path
 import io
 import gspread
@@ -47,20 +49,27 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
+    # ▼▼▼ FUNGSI INI DIPERBARUI DENGAN KONVERSI str() ▼▼▼
     def check_user_submissions(self, email):
+        """Checks the submission status for a given user email."""
         all_data = self.data_entry_sheet.get_all_records()
         active_codes = {"pending": [], "approved": []}
         last_rejected_data = None
         
         for record in reversed(all_data):
-            if record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "").strip() == email:
-                status = record.get(config.COLUMN_NAMES.STATUS, "").strip()
+            # Gunakan .get() untuk mengambil data dengan aman
+            record_email = record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")
+            
+            # Konversi semua nilai menjadi string sebelum memanggil .strip()
+            if str(record_email).strip() == email:
+                status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
                 
                 if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
                     last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
 
-                lokasi = record.get(config.COLUMN_NAMES.LOKASI, "").strip()
+                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
                 if not lokasi: continue
+
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
                     if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
                 elif status == config.STATUS.APPROVED:
@@ -97,7 +106,9 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                if str(record.get('CABANG', '')).strip().lower() == str(branch_name).strip().lower() and str(record.get('JABATAN', '')).strip().upper() == str(jabatan).strip().upper():
+                # Konversi nilai dari sheet ke string sebelum membandingkan
+                if str(record.get('CABANG', '')).strip().lower() == str(branch_name).strip().lower() and \
+                   str(record.get('JABATAN', '')).strip().upper() == str(jabatan).strip().upper():
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")

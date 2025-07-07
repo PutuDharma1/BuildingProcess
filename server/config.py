@@ -1,3 +1,5 @@
+## file: server/config.py (Lengkap & Final)
+
 import os
 from dotenv import load_dotenv
 
@@ -5,14 +7,14 @@ load_dotenv()
 
 # --- Google & Spreadsheet Configuration ---
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "1LA1TlhgltT2bqSN3H-LYasq9PtInVlqq98VPru8txoo")
-PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV" # ID Folder Google Drive Anda
+PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV"
 
 # Nama-nama sheet yang digunakan
 DATA_ENTRY_SHEET_NAME = "Form2"
 APPROVED_DATA_SHEET_NAME = "Form3"
 CABANG_SHEET_NAME = "Cabang"
 
-# --- Column Name Constants ---
+# --- Column Name Constants (DISESUAIKAN DENGAN SHEET ANDA) ---
 class COLUMN_NAMES:
     STATUS = "Status"
     TIMESTAMP = "Timestamp"
@@ -20,6 +22,13 @@ class COLUMN_NAMES:
     LOKASI = "Lokasi"
     PROYEK = "Proyek"
     CABANG = "Cabang"
+    # Diubah agar cocok dengan header sheet Anda
+    LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan" 
+    LUAS_BANGUNAN = "Luas Bangunan"
+    LUAS_TERBANGUNAN = "Luas Terbangunan"
+    LUAS_AREA_TERBUKA = "Luas Area Terbuka Area Parkir"
+    LUAS_AREA_SALES = "Luas Area Sales"
+    LUAS_GUDANG = "Luas Gudang"
     KOORDINATOR_APPROVER = "Persetujuan Koordinator"
     KOORDINATOR_APPROVAL_TIME = "Waktu Persetujuan Koordinator"
     MANAGER_APPROVER = "Pemberi Persetujuan Manager"
