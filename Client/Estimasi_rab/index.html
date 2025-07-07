@@ -93,7 +93,7 @@
         </select>
 
         <label for="lingkup_pekerjaan">Lingkup Pekerjaan:</label>
-        <select name="Lingkup_Pekerjaan" id="lingkup_pekerjaan">
+        <select name="Lingkup_Pekerjaan" id="lingkup_pekerjaan" required>
           <option value="">-- Pilih Lingkup Pekerjaan --</option>
           <option value="Sipil">Sipil</option>
           <option value="ME">ME</option>
@@ -104,7 +104,7 @@
           type="text"
           inputmode="decimal"
           id="luas_bangunan"
-          name="Luas_Bangunan"
+          name="Luas Bangunan"
           placeholder="Masukan Luas Bangunan (e.g., 50.25)"
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
@@ -115,7 +115,7 @@
           type="text"
           inputmode="decimal"
           id="luas_terbangunan"
-          name="Luas_Terbangunan"
+          name="Luas Terbangunan"
           placeholder="Masukan Luas Terbangunan (e.g., 45.50)"
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
@@ -126,7 +126,7 @@
           type="text"
           inputmode="decimal"
           id="luas_area_terbuka_parkir"
-          name="Luas_Area_Terbuka_Area_Parkir"
+          name="Luas Area Terbuka Area Parkir"
           placeholder="Masukan Luas Area Terbuka / Area Parkir (e.g., 20.00)"
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
@@ -137,7 +137,7 @@
           type="text"
           inputmode="decimal"
           id="luas_area_sales"
-          name="Luas_Area_Sales"
+          name="Luas Area Sales"
           placeholder="Masukan Luas Area Sales (e.g., 30.75)"
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
@@ -148,7 +148,7 @@
           type="text"
           inputmode="decimal"
           id="luas_gudang"
-          name="Luas_Gudang"
+          name="Luas Gudang"
           placeholder="Masukan Luas Gudang (e.g., 15.20)"
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
