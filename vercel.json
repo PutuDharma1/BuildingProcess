@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/Login/style.css", "dest": "/Client/Login/style.css" },
+    { "src": "/Login/(.*)", "dest": "/Client/Login/index.html" },
+
+    { "src": "/Homepage/style.css", "dest": "/Client/Homepage/style.css" },
+    { "src": "/Homepage/(.*)", "dest": "/Client/Homepage/index.html" },
+
+    { "src": "/Estimasi_rab/style.css", "dest": "/Client/Estimasi_rab/style.css" },
+    { "src": "/Estimasi_rab/script.js", "dest": "/Client/Estimasi_rab/script.js" },
+    { "src": "/Estimasi_rab/(.*)", "dest": "/Client/Estimasi_rab/index.html" },
+
+    { "src": "/(.*)", "dest": "/Client/Login/index.html" }
+  ]
+}

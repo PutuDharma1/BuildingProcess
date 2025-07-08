@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sessionStorage.setItem('loggedInUserCabang', password);
 
             setTimeout(() => {
-                window.location.href = '/client/Homepage/index.html';
+                window.location.href = "/Homepage";
             }, 1500);
         } else {
             // Panggil fungsi log untuk status GAGAL
