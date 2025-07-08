@@ -1,16 +1,16 @@
 {
   "version": 2,
   "routes": [
-    { "src": "/Login/style.css", "dest": "/Client/Login/style.css" },
-    { "src": "/Login/(.*)", "dest": "/Client/Login/index.html" },
+    { "src": "/login_style.css", "dest": "/Client/login_style.css" },
+    { "src": "/login_script.js", "dest": "/Client/login_script.js" },
+    { "src": "/Assets/(.*)", "dest": "/Client/Assets/$1" },
 
-    { "src": "/Homepage/style.css", "dest": "/Client/Homepage/style.css" },
-    { "src": "/Homepage/(.*)", "dest": "/Client/Homepage/index.html" },
+    { "src": "/Homepage", "dest": "/Client/Homepage/index.html" },
+    { "src": "/Homepage/(.*)", "dest": "/Client/Homepage/$1" },
 
-    { "src": "/Estimasi_rab/style.css", "dest": "/Client/Estimasi_rab/style.css" },
-    { "src": "/Estimasi_rab/script.js", "dest": "/Client/Estimasi_rab/script.js" },
-    { "src": "/Estimasi_rab/(.*)", "dest": "/Client/Estimasi_rab/index.html" },
+    { "src": "/Estimasi_rab", "dest": "/Client/Estimasi_rab/index.html" },
+    { "src": "/Estimasi_rab/(.*)", "dest": "/Client/Estimasi_rab/$1" },
 
-    { "src": "/(.*)", "dest": "/Client/Login/index.html" }
+    { "src": "/(.*)", "dest": "/Client/index.html" }
   ]
 }
