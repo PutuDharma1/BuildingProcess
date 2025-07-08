@@ -190,7 +190,7 @@ const populateFormWithHistory = (data) => {
 
 // ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "http://127.0.0.1:5001";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     
     // --- Validasi ---
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan']; // Gunakan underscore
