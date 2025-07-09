@@ -143,38 +143,33 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-    
-    const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
-    lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
-    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
-    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
             const element = document.getElementsByName(elementName)[0];
             if (element) {
                 element.value = (element.type === 'date' && data[key]) ? new Date(data[key]).toISOString().split('T')[0] : data[key];
+                if (key === 'Lingkup Pekerjaan') {
+                    lingkupPekerjaanSelect.value = data[key];
+                    lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+                }
             }
         }
     }
     setTimeout(() => {
-        document.querySelectorAll(`.boq-table-body[data-scope="${lingkupPekerjaanValue}"] .boq-item-row`).forEach(row => {
-            if (!row.querySelector('.jenis-pekerjaan-search-input').value) row.remove();
-        });
-        
         for (let i = 1; i <= 50; i++) {
             if (data[`Jenis_Pekerjaan_${i}`]) {
                 const category = data[`Kategori_Pekerjaan_${i}`];
-                const scope = lingkupPekerjaanValue;
+                const scope = data.Lingkup_Pekerjaan;
                 const targetTbody = document.querySelector(`.boq-table-body[data-category="${category}"][data-scope="${scope}"]`);
                 if (targetTbody) {
                     const newRow = createBoQRow(category, scope);
                     targetTbody.appendChild(newRow);
-                    populateJenisPekerjaanOptionsForNewRow(newRow);
                     newRow.querySelector('.jenis-pekerjaan-search-input').value = data[`Jenis_Pekerjaan_${i}`];
                     newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
                     newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
                     newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || 0.00;
+                    populateJenisPekerjaanOptionsForNewRow(newRow);
                     newRow.querySelector('.harga-material').value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
                     newRow.querySelector('.harga-upah').value = formatNumberWithSeparators(data[`Harga_Upah_Item_${i}`]);
                 }
@@ -188,24 +183,19 @@ const populateFormWithHistory = (data) => {
     }, 500);
 };
 
-// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    // ▼▼▼ PERUBAHAN UTAMA: URL SERVER RENDER ANDA ▼▼▼
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     
-    // --- Validasi ---
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan']; // Gunakan underscore
-    for (const fieldName of requiredFields) {
-        const element = form.elements[fieldName];
-        if (!element || !element.value.trim()) {
-            messageDiv.textContent = `Error: Field '${fieldName.replace(/_/g, ' ')}' wajib diisi.`;
-            messageDiv.style.display = "block";
-            messageDiv.style.backgroundColor = "#dc3545";
-            element?.focus();
-            return;
-        }
+    const cabangValue = form.elements['Cabang']?.value;
+    const lokasiValue = form.elements['Lokasi']?.value;
+    if (!cabangValue || !lokasiValue) {
+        messageDiv.textContent = `Error: 'Cabang' dan 'Lokasi' wajib diisi.`;
+        messageDiv.style.display = "block";
+        messageDiv.style.backgroundColor = "#dc3545";
+        return;
     }
-    
-    const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
+    const currentStoreCode = String(lokasiValue).toUpperCase();
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
@@ -219,27 +209,20 @@ async function handleFormSubmit() {
         messageDiv.style.color = "black";
         return;
     }
-
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
     submitButton.disabled = true;
-
     try {
-        const formDataToSend = {};
         const formData = new FormData(form);
-        
-        // Ambil semua field utama dari form
+        const formDataToSend = {};
         formData.forEach((value, key) => {
             if (!key.includes('_Item')) {
-                formDataToSend[key] = value;
+                formDataToSend[key.replace(/ /g, '_')] = value;
             }
         });
-
         formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
         formDataToSend["Lokasi"] = currentStoreCode;
-        
-        // Proses ulang semua baris item di tabel secara manual
         let itemCounter = 0;
         document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
             const jenisPekerjaanInput = row.querySelector(".jenis-pekerjaan");
@@ -256,13 +239,10 @@ async function handleFormSubmit() {
                 formDataToSend[`Total_Harga_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-harga").value);
             }
         });
-        
         if (itemCounter === 0) {
             throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
         }
-
         formDataToSend["Grand_Total"] = parseRupiah(grandTotalAmount.textContent);
-        
         const response = await fetch(`${PYTHON_API_BASE_URL}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -271,11 +251,9 @@ async function handleFormSubmit() {
         const data = await response.json();
         console.log("Response from Python backend:", data);
         if (!response.ok) throw new Error(data.message || 'Submission failed.');
-        
         messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
         messageDiv.style.backgroundColor = "#28a745";
         setTimeout(() => { window.location.href = '../Homepage/index.html'; }, 2500);
-
     } catch (error) {
         console.error("Error submitting form:", error);
         messageDiv.textContent = "Error: " + error.message;
@@ -301,7 +279,8 @@ async function initializePage() {
     messageDiv.style.backgroundColor = '#007bff';
     messageDiv.style.color = 'white';
 
-    const PYTHON_API_BASE_URL = "http://127.0.0.1:5001";
+    // ▼▼▼ PERUBAHAN UTAMA: URL SERVER RENDER ANDA ▼▼▼
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
