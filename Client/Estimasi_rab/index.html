@@ -4,15 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Estimasi Rencana Anggaran Biaya - Alfamart</title>
+    <script>
+        // Security Check
+        if (!sessionStorage.getItem('authenticated')) {
+            window.location.href = '/'; 
+        }
+    </script>
     <link rel="stylesheet" href="/Estimasi_rab/style.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <style>
-        .add-row-button-container {
-            text-align: left;
-            margin-top: 10px;
-            margin-bottom: 20px;
-        }
-    </style>
 </head>
 <body>
     <header class="main-header">
@@ -114,93 +113,9 @@
 
             <div class="all-tables-container">
                 <div id="sipil-tables-wrapper" class="hidden">
-                    <h2 class="section-title">PEKERJAAN PERSIAPAN</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th rowspan="2">No</th><th rowspan="2">Jenis Pekerjaan</th><th rowspan="2">Satuan</th>
-                                    <th>Volume</th><th colspan="2">Harga Satuan (Rp)</th><th colspan="2">Total Harga Satuan (Rp)</th>
-                                    <th>Total Harga (Rp)</th><th rowspan="2">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th>a</th><th>Material<br/>(b)</th><th>Upah<br/>(c)</th><th>Material<br/>(d=a×b)</th>
-                                    <th>Upah<br/>(e=a×c)</th><th>(f=d+e)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="boq-table-body" data-category="PEKERJAAN PERSIAPAN" data-scope="Sipil"></tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="8" style="text-align: right; font-weight: bold">Sub Total:</td>
-                                    <td class="sub-total-amount" style="font-weight: bold; text-align: center">Rp 0</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
                     </div>
-                    <div class="add-row-button-container">
-                        <button type="button" class="add-row-btn" data-category="PEKERJAAN PERSIAPAN" data-scope="Sipil">Tambah Item</button>
-                    </div>
-                    
-                    </div>
-
                 <div id="me-tables-wrapper" class="hidden">
-                    <h2 class="section-title">INSTALASI</h2>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th rowspan="2">No</th><th rowspan="2">Jenis Pekerjaan</th><th rowspan="2">Satuan</th>
-                                    <th>Volume</th><th colspan="2">Harga Satuan (Rp)</th><th colspan="2">Total Harga Satuan (Rp)</th>
-                                    <th>Total Harga (Rp)</th><th rowspan="2">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th>a</th><th>Material<br/>(b)</th><th>Upah<br/>(c)</th><th>Material<br/>(d=a×b)</th>
-                                    <th>Upah<br/>(e=a×c)</th><th>(f=d+e)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="boq-table-body" data-category="INSTALASI" data-scope="ME"></tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="8" style="text-align: right; font-weight: bold">Sub Total:</td>
-                                    <td class="sub-total-amount" style="font-weight: bold; text-align: center">Rp 0</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
                     </div>
-                    <div class="add-row-button-container">
-                        <button type="button" class="add-row-btn" data-category="INSTALASI" data-scope="ME">Tambah Item</button>
-                    </div>
-
-                    <h2 class="section-title">FIXTURE</h2>
-                    <div class="table-container">
-                        <table>
-                             <thead>
-                                <tr>
-                                    <th rowspan="2">No</th><th rowspan="2">Jenis Pekerjaan</th><th rowspan="2">Satuan</th>
-                                    <th>Volume</th><th colspan="2">Harga Satuan (Rp)</th><th colspan="2">Total Harga Satuan (Rp)</th>
-                                    <th>Total Harga (Rp)</th><th rowspan="2">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th>a</th><th>Material<br/>(b)</th><th>Upah<br/>(c)</th><th>Material<br/>(d=a×b)</th>
-                                    <th>Upah<br/>(e=a×c)</th><th>(f=d+e)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="boq-table-body" data-category="FIXTURE" data-scope="ME"></tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="8" style="text-align: right; font-weight: bold">Sub Total:</td>
-                                    <td class="sub-total-amount" style="font-weight: bold; text-align: center">Rp 0</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="add-row-button-container">
-                        <button type="button" class="add-row-btn" data-category="FIXTURE" data-scope="ME">Tambah Item</button>
-                    </div>
-                </div>
             </div>
             
             <div class="grand-total-box">
