@@ -12,6 +12,7 @@ let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let lastRejectedSubmission = null;
 
+// --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 
@@ -20,6 +21,8 @@ const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "curren
 const parseRupiah = (formattedString) => parseFloat(String(formattedString).replace(/Rp\s?|\./g, "").replace(/,/g, ".")) || 0;
 const formatNumberWithSeparators = (num) => (num === null || isNaN(num)) ? '0' : new Intl.NumberFormat('id-ID').format(num);
 const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 0) : (parseFloat(str.replace(/\./g, '')) || 0);
+
+// --- Core Functions ---
 
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const category = rowElement.dataset.category;
@@ -56,10 +59,17 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
 
 const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
+    if (!row) return;
+
     const selectedJenisPekerjaan = selectElement.value;
     const currentLingkupPekerjaan = lingkupPekerjaanSelect.value;
-    const currentCategory = row.closest(".boq-table-body").dataset.category;
+    const currentCategory = row.dataset.category;
     const selectedCabang = document.getElementById("cabang").value;
+
+    const volumeInput = row.querySelector(".volume");
+    const materialPriceInput = row.querySelector(".harga-material");
+    const upahPriceInput = row.querySelector(".harga-upah");
+    const satuanInput = row.querySelector(".satuan");
 
     let selectedItem = null;
     let dataSource = (currentLingkupPekerjaan === "Sipil") ? categorizedPrices.categorizedSipilPrices : categorizedPrices.categorizedMePrices;
@@ -71,15 +81,50 @@ const autoFillPrices = (selectElement) => {
     }
 
     if (selectedItem) {
-        row.querySelector(".harga-material").value = formatNumberWithSeparators(selectedItem["Harga Material"]);
-        row.querySelector(".harga-upah").value = formatNumberWithSeparators(selectedItem["Harga Upah"]);
-        row.querySelector(".satuan").value = selectedItem["Satuan"];
+        // Fitur 1: Otomatisasi Volume untuk Satuan "Ls"
+        if (selectedItem["Satuan"] === "Ls") {
+            volumeInput.value = 1;
+            volumeInput.readOnly = true;
+        } else {
+            volumeInput.readOnly = false;
+        }
+
+        // Fitur 2: Harga Kondisional untuk Material
+        if (selectedItem["Harga Material"] === "Kondisional") {
+            materialPriceInput.value = "0";
+            materialPriceInput.readOnly = false;
+            materialPriceInput.style.backgroundColor = "#fffde7"; // Warna kuning muda
+        } else {
+            materialPriceInput.value = formatNumberWithSeparators(selectedItem["Harga Material"]);
+            materialPriceInput.readOnly = true;
+            materialPriceInput.style.backgroundColor = "";
+        }
+
+        // Fitur 2: Harga Kondisional untuk Upah
+        if (selectedItem["Harga Upah"] === "Kondisional") {
+            upahPriceInput.value = "0";
+            upahPriceInput.readOnly = false;
+            upahPriceInput.style.backgroundColor = "#fffde7";
+        } else {
+            upahPriceInput.value = formatNumberWithSeparators(selectedItem["Harga Upah"]);
+            upahPriceInput.readOnly = true;
+            upahPriceInput.style.backgroundColor = "";
+        }
+        
+        satuanInput.value = selectedItem["Satuan"];
+
     } else {
-        row.querySelector(".harga-material").value = "0";
-        row.querySelector(".harga-upah").value = "0";
-        row.querySelector(".satuan").value = "Ls";
+        // Reset semua jika tidak ada item yang dipilih
+        volumeInput.readOnly = false;
+        materialPriceInput.value = "0";
+        materialPriceInput.readOnly = true;
+        materialPriceInput.style.backgroundColor = "";
+        upahPriceInput.value = "0";
+        upahPriceInput.readOnly = true;
+        upahPriceInput.style.backgroundColor = "";
+        satuanInput.value = "";
     }
-    calculateTotalPrice(row.querySelector(".volume"));
+    calculateTotalPrice(volumeInput);
 };
 
 const createBoQRow = (category, scope) => {
@@ -87,7 +132,17 @@ const createBoQRow = (category, scope) => {
     row.classList.add("boq-item-row");
     row.dataset.category = category;
     row.dataset.scope = scope;
-    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="number" class="volume form-control" name="Volume_Item" value="0.00" min="0" step="0.01" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    row.innerHTML = `
+        <td class="col-no"><span class="row-number"></span></td>
+        <td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td>
+        <td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td>
+        <td class="col-volume"><input type="number" class="volume form-control" name="Volume_Item" value="0.00" min="0" step="0.01" /></td>
+        <td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td>
+        <td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td>
+        <td class="col-harga"><input type="text" class="total-material form-control" disabled /></td>
+        <td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td>
+        <td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td>
+        <td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     
     [row.querySelector(".volume"), row.querySelector(".harga-material"), row.querySelector(".harga-upah")].forEach(input => input.addEventListener("input", () => calculateTotalPrice(input)));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
@@ -185,7 +240,80 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    // ... (Fungsi ini tidak berubah dari versi sebelumnya)
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
+    for (const fieldName of requiredFields) {
+        const element = form.elements[fieldName];
+        if (!element || !element.value.trim()) {
+            messageDiv.textContent = `Error: Field '${fieldName.replace(/_/g, ' ')}' wajib diisi.`;
+            messageDiv.style.display = "block";
+            messageDiv.style.backgroundColor = "#dc3545";
+            element?.focus();
+            return;
+        }
+    }
+    const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
+    if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
+        messageDiv.style.display = "block";
+        messageDiv.style.backgroundColor = "#dc3545";
+        return;
+    }
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
+        messageDiv.style.display = "block";
+        messageDiv.style.backgroundColor = "#ffc107";
+        messageDiv.style.color = "black";
+        return;
+    }
+    messageDiv.textContent = "Mengirim data...";
+    messageDiv.style.display = "block";
+    messageDiv.style.backgroundColor = '#007bff';
+    submitButton.disabled = true;
+    try {
+        const formDataToSend = {};
+        const formData = new FormData(form);
+        formData.forEach((value, key) => {
+            if (!key.includes('_Item')) formDataToSend[key] = value;
+        });
+        formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
+        formDataToSend["Lokasi"] = currentStoreCode;
+        let itemCounter = 0;
+        document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
+            const jenisPekerjaanInput = row.querySelector(".jenis-pekerjaan");
+            if (jenisPekerjaanInput && jenisPekerjaanInput.value) {
+                itemCounter++;
+                formDataToSend[`Kategori_Pekerjaan_${itemCounter}`] = row.dataset.category;
+                formDataToSend[`Jenis_Pekerjaan_${itemCounter}`] = jenisPekerjaanInput.value;
+                formDataToSend[`Satuan_Item_${itemCounter}`] = row.querySelector(".satuan").value;
+                formDataToSend[`Volume_Item_${itemCounter}`] = parseFloat(row.querySelector(".volume").value) || 0;
+                formDataToSend[`Harga_Material_Item_${itemCounter}`] = parseFormattedNumber(row.querySelector(".harga-material").value);
+                formDataToSend[`Harga_Upah_Item_${itemCounter}`] = parseFormattedNumber(row.querySelector(".harga-upah").value);
+                formDataToSend[`Total_Material_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-material").value);
+                formDataToSend[`Total_Upah_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-upah").value);
+                formDataToSend[`Total_Harga_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-harga").value);
+            }
+        });
+        if (itemCounter === 0) throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
+        formDataToSend["Grand_Total"] = parseRupiah(grandTotalAmount.textContent);
+        const response = await fetch(`${PYTHON_API_BASE_URL}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formDataToSend),
+        });
+        const data = await response.json();
+        console.log("Response from Python backend:", data);
+        if (!response.ok) throw new Error(data.message || 'Submission failed.');
+        messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
+        messageDiv.style.backgroundColor = "#28a745";
+        setTimeout(() => { window.location.href = '/Homepage/'; }, 2500);
+    } catch (error) {
+        console.error("Error submitting form:", error);
+        messageDiv.textContent = "Error: " + error.message;
+        messageDiv.style.backgroundColor = "#dc3545";
+    } finally {
+        submitButton.disabled = false;
+    }
 }
 
 function createTableStructure(categoryName, scope) {
@@ -194,7 +322,6 @@ function createTableStructure(categoryName, scope) {
     return tableWrapper;
 }
 
-// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -206,27 +333,23 @@ async function initializePage() {
     currentResetButton = form.querySelector("button[type='reset']");
     const cabangSelect = document.getElementById("cabang");
 
-    // Tidak lagi menonaktifkan seluruh form di awal
-    messageDiv.textContent = 'Memuat data harga...';
+    messageDiv.textContent = 'Memuat data, mohon tunggu...';
     messageDiv.style.display = 'block';
     messageDiv.style.backgroundColor = '#007bff';
     messageDiv.style.color = 'white';
 
-    // Membuat struktur tabel secara dinamis
     sipilTablesWrapper.innerHTML = '';
     meTablesWrapper.innerHTML = '';
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    // --- Memuat Data di Latar Belakang ---
     const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
-        // Cek status tanpa memblokir UI
         fetch(`${PYTHON_API_BASE_URL}/check_status?email=${encodeURIComponent(userEmail)}`)
             .then(response => {
-                if (!response.ok) throw new Error('Failed to check status');
+                if (!response.ok) throw new Error('Failed to check status from server');
                 return response.json();
             })
             .then(result => {
@@ -236,7 +359,10 @@ async function initializePage() {
                     messageDiv.innerHTML = `Ditemukan data pengajuan yang ditolak untuk kode toko <strong>${lastRejectedSubmission.Lokasi}</strong>. Masukkan kode toko yang sama untuk memuat ulang data.`;
                     messageDiv.style.backgroundColor = '#ffc107';
                     messageDiv.style.color = 'black';
-                    messageDiv.style.display = 'block';
+                } else {
+                     if (messageDiv.textContent.includes('Memuat data')) {
+                        messageDiv.style.display = 'none';
+                    }
                 }
                 if (result.active_codes) {
                     pendingStoreCodes = result.active_codes.pending || [];
@@ -246,33 +372,9 @@ async function initializePage() {
             .catch(error => {
                 console.error("Gagal memeriksa status pengajuan:", error);
                 messageDiv.textContent = "Gagal memuat status pengajuan terakhir.";
-                messageDiv.style.display = 'block';
                 messageDiv.style.backgroundColor = '#dc3545';
             });
     }
-    
-    // Muat data harga
-    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
-    fetch(APPS_SCRIPT_DATA_URL)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            categorizedPrices = data;
-            console.log("Data harga berhasil dimuat.");
-            // Sembunyikan pesan loading hanya jika tidak ada pesan revisi
-            if (!lastRejectedSubmission) {
-                messageDiv.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading price data:', error);
-            messageDiv.textContent = 'Gagal memuat data harga. Mohon muat ulang halaman.';
-            messageDiv.style.display = 'block';
-        });
-
-    // --- Event Listeners (tidak ada perubahan besar di sini) ---
     
     document.getElementById('lokasi')?.addEventListener('input', function() {
         const currentStoreCode = this.value.toUpperCase();
@@ -282,6 +384,24 @@ async function initializePage() {
             }
         }
     });
+
+    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
+    fetch(APPS_SCRIPT_DATA_URL)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            categorizedPrices = data;
+            console.log("Data harga berhasil dimuat.");
+            if (!lastRejectedSubmission) {
+                 messageDiv.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading price data:', error);
+            messageDiv.textContent = 'Gagal memuat data harga. Mohon muat ulang halaman.';
+        });
 
     document.querySelectorAll(".add-row-btn").forEach(button => {
         button.addEventListener("click", () => {
@@ -310,7 +430,9 @@ async function initializePage() {
         const selectedScope = event.target.value;
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
-        refreshAllDropdowns();
+        if (selectedScope) {
+            refreshAllDropdowns();
+        }
     });
     
     cabangSelect.addEventListener('change', refreshAllDropdowns);
