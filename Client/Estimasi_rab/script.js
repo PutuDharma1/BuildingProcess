@@ -21,30 +21,20 @@ const parseRupiah = (formattedString) => parseFloat(String(formattedString).repl
 const formatNumberWithSeparators = (num) => (num === null || isNaN(num)) ? '0' : new Intl.NumberFormat('id-ID').format(num);
 const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 0) : (parseFloat(String(str).replace(/\./g, '')) || 0);
 
-// ▼▼▼ FUNGSI BARU UNTUK MEMFORMAT INPUT HARGA ▼▼▼
 const handleCurrencyInput = (event) => {
     const input = event.target;
-    // 1. Hapus semua karakter kecuali angka
     let numericValue = input.value.replace(/[^0-9]/g, '');
-    
-    // 2. Jika kosong, biarkan kosong agar bisa dihapus
     if (numericValue === '') {
         input.value = '';
-        calculateTotalPrice(input); // Hitung ulang total
+        calculateTotalPrice(input);
         return;
     }
-
-    // 3. Konversi ke angka dan format ulang dengan pemisah ribuan
     const number = parseInt(numericValue, 10);
     input.value = formatNumberWithSeparators(number);
-    
-    // 4. Hitung ulang total setiap kali ada input
     calculateTotalPrice(input);
 };
 
-
 // --- Core Functions ---
-
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
@@ -78,7 +68,6 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     });
 };
 
-// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL DENGAN LOGIKA BARU ▼▼▼
 const autoFillPrices = (selectElement) => {
     const row = selectElement.closest("tr");
     if (!row) return;
@@ -93,7 +82,6 @@ const autoFillPrices = (selectElement) => {
     const upahPriceInput = row.querySelector(".harga-upah");
     const satuanInput = row.querySelector(".satuan");
 
-    // Hapus event listener lama untuk mencegah duplikasi
     materialPriceInput.removeEventListener('input', handleCurrencyInput);
     upahPriceInput.removeEventListener('input', handleCurrencyInput);
 
@@ -118,7 +106,7 @@ const autoFillPrices = (selectElement) => {
             materialPriceInput.value = "0";
             materialPriceInput.readOnly = false;
             materialPriceInput.style.backgroundColor = "#fffde7";
-            materialPriceInput.addEventListener('input', handleCurrencyInput); // Tambah listener
+            materialPriceInput.addEventListener('input', handleCurrencyInput);
         } else {
             materialPriceInput.value = formatNumberWithSeparators(selectedItem["Harga Material"]);
             materialPriceInput.readOnly = true;
@@ -129,7 +117,7 @@ const autoFillPrices = (selectElement) => {
             upahPriceInput.value = "0";
             upahPriceInput.readOnly = false;
             upahPriceInput.style.backgroundColor = "#fffde7";
-            upahPriceInput.addEventListener('input', handleCurrencyInput); // Tambah listener
+            upahPriceInput.addEventListener('input', handleCurrencyInput);
         } else {
             upahPriceInput.value = formatNumberWithSeparators(selectedItem["Harga Upah"]);
             upahPriceInput.readOnly = true;
@@ -139,7 +127,7 @@ const autoFillPrices = (selectElement) => {
         satuanInput.value = selectedItem["Satuan"];
 
     } else {
-        volumeInput.value = 0; // Reset volume jika tidak ada item
+        volumeInput.value = 0;
         volumeInput.readOnly = false;
         materialPriceInput.value = "0";
         materialPriceInput.readOnly = true;
@@ -152,13 +140,33 @@ const autoFillPrices = (selectElement) => {
     calculateTotalPrice(volumeInput);
 };
 
-
+// ▼▼▼ FUNGSI INI DIPERBARUI ▼▼▼
 const createBoQRow = (category, scope) => {
     const row = document.createElement("tr");
     row.classList.add("boq-item-row");
     row.dataset.category = category;
     row.dataset.scope = scope;
-    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="number" class="volume form-control" name="Volume_Item" value="0.00" min="0" step="0.01" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    row.innerHTML = `
+        <td class="col-no"><span class="row-number"></span></td>
+        <td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td>
+        <td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td>
+        <td class="col-volume">
+            <input 
+                type="number" 
+                class="volume form-control" 
+                name="Volume_Item" 
+                value="0.00" 
+                min="0" 
+                step="0.01" 
+                oninput="this.value = !!this.value && Math.abs(this.value) >= 0 ? Math.abs(this.value) : null; if(this.value) this.value = parseFloat(this.value).toFixed(2)"
+            />
+        </td>
+        <td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td>
+        <td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td>
+        <td class="col-harga"><input type="text" class="total-material form-control" disabled /></td>
+        <td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td>
+        <td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td>
+        <td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
@@ -209,11 +217,9 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-    
     const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
     lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
-    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
@@ -234,11 +240,7 @@ const populateFormWithHistory = (data) => {
                     targetTbody.appendChild(newRow);
                     populateJenisPekerjaanOptionsForNewRow(newRow);
                     newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
-                    
-                    // Trigger autoFillPrices untuk mengisi semua data, termasuk readonly & event listeners
                     autoFillPrices(newRow.querySelector('.jenis-pekerjaan'));
-
-                    // Isi kembali nilai volume dan harga kondisional jika ada
                     newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || 0.00;
                     if (newRow.querySelector('.harga-material').readOnly === false) {
                         newRow.querySelector('.harga-material').value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
@@ -258,7 +260,80 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    // ... (Fungsi ini tidak berubah dari versi sebelumnya)
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
+    for (const fieldName of requiredFields) {
+        const element = form.elements[fieldName];
+        if (!element || !element.value.trim()) {
+            messageDiv.textContent = `Error: Field '${fieldName.replace(/_/g, ' ')}' wajib diisi.`;
+            messageDiv.style.display = "block";
+            messageDiv.style.backgroundColor = "#dc3545";
+            element?.focus();
+            return;
+        }
+    }
+    const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
+    if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
+        messageDiv.style.display = "block";
+        messageDiv.style.backgroundColor = "#dc3545";
+        return;
+    }
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
+        messageDiv.style.display = "block";
+        messageDiv.style.backgroundColor = "#ffc107";
+        messageDiv.style.color = "black";
+        return;
+    }
+    messageDiv.textContent = "Mengirim data...";
+    messageDiv.style.display = "block";
+    messageDiv.style.backgroundColor = '#007bff';
+    submitButton.disabled = true;
+    try {
+        const formDataToSend = {};
+        const formData = new FormData(form);
+        formData.forEach((value, key) => {
+            if (!key.includes('_Item')) formDataToSend[key] = value;
+        });
+        formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
+        formDataToSend["Lokasi"] = currentStoreCode;
+        let itemCounter = 0;
+        document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
+            const jenisPekerjaanInput = row.querySelector(".jenis-pekerjaan");
+            if (jenisPekerjaanInput && jenisPekerjaanInput.value) {
+                itemCounter++;
+                formDataToSend[`Kategori_Pekerjaan_${itemCounter}`] = row.dataset.category;
+                formDataToSend[`Jenis_Pekerjaan_${itemCounter}`] = jenisPekerjaanInput.value;
+                formDataToSend[`Satuan_Item_${itemCounter}`] = row.querySelector(".satuan").value;
+                formDataToSend[`Volume_Item_${itemCounter}`] = parseFloat(row.querySelector(".volume").value) || 0;
+                formDataToSend[`Harga_Material_Item_${itemCounter}`] = parseFormattedNumber(row.querySelector(".harga-material").value);
+                formDataToSend[`Harga_Upah_Item_${itemCounter}`] = parseFormattedNumber(row.querySelector(".harga-upah").value);
+                formDataToSend[`Total_Material_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-material").value);
+                formDataToSend[`Total_Upah_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-upah").value);
+                formDataToSend[`Total_Harga_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-harga").value);
+            }
+        });
+        if (itemCounter === 0) throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
+        formDataToSend["Grand_Total"] = parseRupiah(grandTotalAmount.textContent);
+        const response = await fetch(`${PYTHON_API_BASE_URL}/submit`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formDataToSend),
+        });
+        const data = await response.json();
+        console.log("Response from Python backend:", data);
+        if (!response.ok) throw new Error(data.message || 'Submission failed.');
+        messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
+        messageDiv.style.backgroundColor = "#28a745";
+        setTimeout(() => { window.location.href = '/Homepage/'; }, 2500);
+    } catch (error) {
+        console.error("Error submitting form:", error);
+        messageDiv.textContent = "Error: " + error.message;
+        messageDiv.style.backgroundColor = "#dc3545";
+    } finally {
+        submitButton.disabled = false;
+    }
 }
 
 function createTableStructure(categoryName, scope) {
@@ -302,6 +377,8 @@ async function initializePage() {
                 if (result.last_rejected_data) {
                     lastRejectedSubmission = result.last_rejected_data;
                     messageDiv.innerHTML = `Ditemukan data pengajuan yang ditolak untuk kode toko <strong>${lastRejectedSubmission.Lokasi}</strong>. Masukkan kode toko yang sama untuk memuat ulang data.`;
+                    messageDiv.style.backgroundColor = '#ffc107';
+                    messageDiv.style.color = 'black';
                 } else {
                      if (messageDiv.textContent.includes('Memuat data')) {
                         messageDiv.style.display = 'none';
