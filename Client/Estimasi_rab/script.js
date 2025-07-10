@@ -21,9 +21,6 @@ const parseRupiah = (formattedString) => parseFloat(String(formattedString).repl
 const formatNumberWithSeparators = (num) => (num === null || isNaN(num)) ? '0' : new Intl.NumberFormat('id-ID').format(num);
 const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 0) : (parseFloat(str.replace(/\./g, '')) || 0);
 
-// --- Core Functions ---
-
-// ▼▼▼ FUNGSI INI DIPERBARUI ▼▼▼
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
@@ -43,7 +40,6 @@ const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const itemsInCategory = dataSource[category] || [];
     const filteredItems = itemsInCategory.filter(item => item.Cabang === selectedCabang);
 
-    // Jika tidak ada item untuk cabang yang dipilih, beri pesan
     if (filteredItems.length === 0) {
         selectEl.innerHTML = '<option value="">-- Data Harga Tidak Ditemukan --</option>';
         return;
@@ -198,6 +194,7 @@ function createTableStructure(categoryName, scope) {
     return tableWrapper;
 }
 
+// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function initializePage() {
     form = document.getElementById("form");
     submitButton = document.getElementById("submit-button");
@@ -209,45 +206,73 @@ async function initializePage() {
     currentResetButton = form.querySelector("button[type='reset']");
     const cabangSelect = document.getElementById("cabang");
 
-    lingkupPekerjaanSelect.disabled = true;
-    
-    // ▼▼▼ PERUBAHAN LOGIKA PESAN LOADING ▼▼▼
-    messageDiv.textContent = 'Memeriksa status pengajuan...';
+    // Tidak lagi menonaktifkan seluruh form di awal
+    messageDiv.textContent = 'Memuat data harga...';
     messageDiv.style.display = 'block';
     messageDiv.style.backgroundColor = '#007bff';
     messageDiv.style.color = 'white';
 
+    // Membuat struktur tabel secara dinamis
     sipilTablesWrapper.innerHTML = '';
     meTablesWrapper.innerHTML = '';
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
+    // --- Memuat Data di Latar Belakang ---
     const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
-        try {
-            const checkUrl = `${PYTHON_API_BASE_URL}/check_status?email=${encodeURIComponent(userEmail)}`;
-            const response = await fetch(checkUrl);
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Failed to check status');
-            console.log("User submissions response:", result);
-            if (result.last_rejected_data) {
-                lastRejectedSubmission = result.last_rejected_data;
-                messageDiv.innerHTML = `Ditemukan data pengajuan yang ditolak untuk kode toko <strong>${lastRejectedSubmission.Lokasi}</strong>. Masukkan kode toko yang sama untuk memuat ulang data.`;
-            } else {
-                 messageDiv.style.display = 'none';
-            }
-            if (result.active_codes) {
-                pendingStoreCodes = result.active_codes.pending || [];
-                approvedStoreCodes = result.active_codes.approved || [];
-            }
-        } catch (error) {
-            console.error("Gagal memeriksa status pengajuan:", error);
-            messageDiv.textContent = "Gagal memuat status pengajuan terakhir. Error: " + error.message;
-            messageDiv.style.backgroundColor = '#dc3545';
-        }
+        // Cek status tanpa memblokir UI
+        fetch(`${PYTHON_API_BASE_URL}/check_status?email=${encodeURIComponent(userEmail)}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to check status');
+                return response.json();
+            })
+            .then(result => {
+                console.log("User submissions response:", result);
+                if (result.last_rejected_data) {
+                    lastRejectedSubmission = result.last_rejected_data;
+                    messageDiv.innerHTML = `Ditemukan data pengajuan yang ditolak untuk kode toko <strong>${lastRejectedSubmission.Lokasi}</strong>. Masukkan kode toko yang sama untuk memuat ulang data.`;
+                    messageDiv.style.backgroundColor = '#ffc107';
+                    messageDiv.style.color = 'black';
+                    messageDiv.style.display = 'block';
+                }
+                if (result.active_codes) {
+                    pendingStoreCodes = result.active_codes.pending || [];
+                    approvedStoreCodes = result.active_codes.approved || [];
+                }
+            })
+            .catch(error => {
+                console.error("Gagal memeriksa status pengajuan:", error);
+                messageDiv.textContent = "Gagal memuat status pengajuan terakhir.";
+                messageDiv.style.display = 'block';
+                messageDiv.style.backgroundColor = '#dc3545';
+            });
     }
+    
+    // Muat data harga
+    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
+    fetch(APPS_SCRIPT_DATA_URL)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            categorizedPrices = data;
+            console.log("Data harga berhasil dimuat.");
+            // Sembunyikan pesan loading hanya jika tidak ada pesan revisi
+            if (!lastRejectedSubmission) {
+                messageDiv.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading price data:', error);
+            messageDiv.textContent = 'Gagal memuat data harga. Mohon muat ulang halaman.';
+            messageDiv.style.display = 'block';
+        });
+
+    // --- Event Listeners (tidak ada perubahan besar di sini) ---
     
     document.getElementById('lokasi')?.addEventListener('input', function() {
         const currentStoreCode = this.value.toUpperCase();
@@ -257,24 +282,6 @@ async function initializePage() {
             }
         }
     });
-
-    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
-    messageDiv.textContent = 'Memuat data harga...'; // Pesan baru yang lebih spesifik
-    messageDiv.style.display = 'block';
-    try {
-        const response = await fetch(APPS_SCRIPT_DATA_URL);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        categorizedPrices = await response.json();
-        console.log("Data harga berhasil dimuat.");
-        lingkupPekerjaanSelect.disabled = false;
-        if (!lastRejectedSubmission) {
-             messageDiv.style.display = 'none';
-        }
-    } catch (error) {
-        console.error('Error loading price data:', error);
-        messageDiv.textContent = 'Gagal memuat data harga. Mohon muat ulang halaman.';
-        messageDiv.style.display = 'block';
-    }
 
     document.querySelectorAll(".add-row-btn").forEach(button => {
         button.addEventListener("click", () => {
