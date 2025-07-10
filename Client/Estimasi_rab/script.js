@@ -12,6 +12,7 @@ let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let lastRejectedSubmission = null;
 
+// --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 
@@ -140,25 +141,25 @@ const autoFillPrices = (selectElement) => {
     calculateTotalPrice(volumeInput);
 };
 
-// ▼▼▼ FUNGSI INI DIPERBARUI ▼▼▼
+// ▼▼▼ FUNGSI INI DIPERBARUI DENGAN VALIDASI VOLUME ▼▼▼
 const createBoQRow = (category, scope) => {
     const row = document.createElement("tr");
     row.classList.add("boq-item-row");
     row.dataset.category = category;
     row.dataset.scope = scope;
+    // Menambahkan oninput ke elemen volume
     row.innerHTML = `
         <td class="col-no"><span class="row-number"></span></td>
         <td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td>
         <td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td>
         <td class="col-volume">
             <input 
-                type="number" 
+                type="text" 
                 class="volume form-control" 
                 name="Volume_Item" 
                 value="0.00" 
-                min="0" 
-                step="0.01" 
-                oninput="this.value = !!this.value && Math.abs(this.value) >= 0 ? Math.abs(this.value) : null; if(this.value) this.value = parseFloat(this.value).toFixed(2)"
+                inputmode="decimal"
+                oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')"
             />
         </td>
         <td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td>
@@ -241,7 +242,7 @@ const populateFormWithHistory = (data) => {
                     populateJenisPekerjaanOptionsForNewRow(newRow);
                     newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
                     autoFillPrices(newRow.querySelector('.jenis-pekerjaan'));
-                    newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || 0.00;
+                    newRow.querySelector('.volume').value = parseFloat(data[`Volume_Item_${i}`] || 0).toFixed(2);
                     if (newRow.querySelector('.harga-material').readOnly === false) {
                         newRow.querySelector('.harga-material').value = formatNumberWithSeparators(data[`Harga_Material_Item_${i}`]);
                     }
