@@ -12,10 +12,6 @@ let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let lastRejectedSubmission = null;
 
-// ▼▼▼ DAFTAR KATEGORI ASLI ▼▼▼
-const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
-const meCategories = ["INSTALASI", "FIXTURE"];
-
 // --- Helper Functions ---
 const formatRupiah = (number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(number);
 const parseRupiah = (formattedString) => parseFloat(String(formattedString).replace(/Rp\s?|\./g, "").replace(/,/g, ".")) || 0;
@@ -25,17 +21,52 @@ const parseFormattedNumber = (str) => typeof str !== 'string' ? (Number(str) || 
 const populateJenisPekerjaanOptionsForNewRow = (rowElement) => {
     const category = rowElement.dataset.category;
     const scope = rowElement.dataset.scope;
-    const selectEl = rowElement.querySelector(".jenis-pekerjaan");
-    if (!selectEl) return;
+    const searchInput = rowElement.querySelector(".jenis-pekerjaan-search-input");
+    const hiddenSelect = rowElement.querySelector(".jenis-pekerjaan");
+    const suggestionsList = rowElement.querySelector(".jenis-pekerjaan-suggestions");
+    if (!searchInput || !hiddenSelect || !suggestionsList) return;
     let dataSource = (scope === "Sipil" && categorizedPrices.categorizedSipilPrices) ? categorizedPrices.categorizedSipilPrices : (scope === "ME" && categorizedPrices.categorizedMePrices) ? categorizedPrices.categorizedMePrices : {};
     const itemsInCategory = dataSource[category] || [];
-    selectEl.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
+    hiddenSelect.innerHTML = '<option value="">-- Pilih Jenis Pekerjaan --</option>';
     itemsInCategory.forEach(item => {
         const option = document.createElement("option");
         option.value = item["Jenis Pekerjaan"];
         option.textContent = item["Jenis Pekerjaan"];
-        selectEl.appendChild(option);
+        hiddenSelect.appendChild(option);
     });
+    const removeListeners = (inputEl) => {
+        if (inputEl._inputHandler) inputEl.removeEventListener("input", inputEl._inputHandler);
+        if (inputEl._focusHandler) inputEl.removeEventListener("focus", inputEl._focusHandler);
+        if (inputEl._blurHandler) inputEl.removeEventListener("blur", inputEl._blurHandler);
+    };
+    removeListeners(searchInput);
+    searchInput._inputHandler = () => {
+        const searchTerm = searchInput.value.toLowerCase();
+        suggestionsList.innerHTML = "";
+        const itemsToDisplay = searchTerm.length > 0 ? itemsInCategory.filter(item => item["Jenis Pekerjaan"].toLowerCase().includes(searchTerm)) : itemsInCategory;
+        if (itemsToDisplay.length > 0) {
+            itemsToDisplay.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = item["Jenis Pekerjaan"];
+                li.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    searchInput.value = item["Jenis Pekerjaan"];
+                    hiddenSelect.value = item["Jenis Pekerjaan"];
+                    suggestionsList.classList.add("hidden");
+                    autoFillPrices(hiddenSelect);
+                });
+                suggestionsList.appendChild(li);
+            });
+            suggestionsList.classList.remove("hidden");
+        } else {
+            suggestionsList.classList.add("hidden");
+        }
+    };
+    searchInput.addEventListener("input", searchInput._inputHandler);
+    searchInput._focusHandler = () => searchInput.dispatchEvent(new Event("input"));
+    searchInput.addEventListener("focus", searchInput._focusHandler);
+    searchInput._blurHandler = () => setTimeout(() => { if (!suggestionsList.contains(document.activeElement)) suggestionsList.classList.add("hidden"); }, 150);
+    searchInput.addEventListener("blur", searchInput._blurHandler);
 };
 
 const autoFillPrices = (selectElement) => {
@@ -62,7 +93,7 @@ const createBoQRow = (category, scope) => {
     row.classList.add("boq-item-row");
     row.dataset.category = category;
     row.dataset.scope = scope;
-    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="number" class="volume form-control" name="Volume_Item" value="0.00" min="0" step="0.01" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    row.innerHTML = `<td><span class="row-number"></span></td><td><div class="jenis-pekerjaan-wrapper"><input type="text" class="jenis-pekerjaan-search-input" placeholder="Cari Jenis Pekerjaan"><select class="jenis-pekerjaan hidden" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select><ul class="jenis-pekerjaan-suggestions hidden"></ul></div></td><td><input type="text" class="satuan" name="Satuan_Item" required readonly /></td><td><input type="number" class="volume" name="Volume_Item" value="0.00" min="0" step="0.01" /></td><td><input type="text" class="harga-material" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td><input type="text" class="harga-upah" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td><input type="text" class="total-material" disabled /></td><td><input type="text" class="total-upah" disabled /></td><td><input type="text" class="total-harga" disabled /></td><td><button type="button" class="delete-row-btn">Hapus</button></td>`;
     [row.querySelector(".volume"), row.querySelector(".harga-material"), row.querySelector(".harga-upah")].forEach(input => input.addEventListener("input", () => calculateTotalPrice(input)));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
     row.querySelector('.jenis-pekerjaan').addEventListener('change', (e) => autoFillPrices(e.target));
@@ -112,22 +143,25 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
+    
     const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
     lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
             const element = document.getElementsByName(elementName)[0];
-            if (element && key !== 'Lingkup_Pekerjaan' && key !== 'Lingkup Pekerjaan') {
+            if (element) {
                 element.value = (element.type === 'date' && data[key]) ? new Date(data[key]).toISOString().split('T')[0] : data[key];
             }
         }
     }
     setTimeout(() => {
         document.querySelectorAll(`.boq-table-body[data-scope="${lingkupPekerjaanValue}"] .boq-item-row`).forEach(row => {
-            if (!row.querySelector('.jenis-pekerjaan').value) row.remove();
+            if (!row.querySelector('.jenis-pekerjaan-search-input').value) row.remove();
         });
+        
         for (let i = 1; i <= 50; i++) {
             if (data[`Jenis_Pekerjaan_${i}`]) {
                 const category = data[`Kategori_Pekerjaan_${i}`];
@@ -137,6 +171,7 @@ const populateFormWithHistory = (data) => {
                     const newRow = createBoQRow(category, scope);
                     targetTbody.appendChild(newRow);
                     populateJenisPekerjaanOptionsForNewRow(newRow);
+                    newRow.querySelector('.jenis-pekerjaan-search-input').value = data[`Jenis_Pekerjaan_${i}`];
                     newRow.querySelector('.jenis-pekerjaan').value = data[`Jenis_Pekerjaan_${i}`];
                     newRow.querySelector('.satuan').value = data[`Satuan_Item_${i}`];
                     newRow.querySelector('.volume').value = data[`Volume_Item_${i}`] || 0.00;
@@ -150,12 +185,15 @@ const populateFormWithHistory = (data) => {
         messageDiv.style.display = 'block';
         messageDiv.style.backgroundColor = '#007bff';
         messageDiv.style.color = 'white';
-    }, 200);
+    }, 500);
 };
 
+// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
     const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
+    
+    // --- Validasi ---
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan']; // Gunakan underscore
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
@@ -166,6 +204,7 @@ async function handleFormSubmit() {
             return;
         }
     }
+    
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
@@ -180,18 +219,27 @@ async function handleFormSubmit() {
         messageDiv.style.color = "black";
         return;
     }
+
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
     submitButton.disabled = true;
+
     try {
         const formDataToSend = {};
         const formData = new FormData(form);
+        
+        // Ambil semua field utama dari form
         formData.forEach((value, key) => {
-            if (!key.includes('_Item')) formDataToSend[key] = value;
+            if (!key.includes('_Item')) {
+                formDataToSend[key] = value;
+            }
         });
+
         formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
         formDataToSend["Lokasi"] = currentStoreCode;
+        
+        // Proses ulang semua baris item di tabel secara manual
         let itemCounter = 0;
         document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
             const jenisPekerjaanInput = row.querySelector(".jenis-pekerjaan");
@@ -208,8 +256,13 @@ async function handleFormSubmit() {
                 formDataToSend[`Total_Harga_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-harga").value);
             }
         });
-        if (itemCounter === 0) throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
+        
+        if (itemCounter === 0) {
+            throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
+        }
+
         formDataToSend["Grand_Total"] = parseRupiah(grandTotalAmount.textContent);
+        
         const response = await fetch(`${PYTHON_API_BASE_URL}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -218,9 +271,11 @@ async function handleFormSubmit() {
         const data = await response.json();
         console.log("Response from Python backend:", data);
         if (!response.ok) throw new Error(data.message || 'Submission failed.');
+        
         messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
         messageDiv.style.backgroundColor = "#28a745";
         setTimeout(() => { window.location.href = '../Homepage/index.html'; }, 2500);
+
     } catch (error) {
         console.error("Error submitting form:", error);
         messageDiv.textContent = "Error: " + error.message;
@@ -228,12 +283,6 @@ async function handleFormSubmit() {
     } finally {
         submitButton.disabled = false;
     }
-}
-
-function createTableStructure(categoryName, scope) {
-    const tableWrapper = document.createElement('div');
-    tableWrapper.innerHTML = `<h2 class="section-title">${categoryName}</h2><div class="table-container"><table><thead><tr><th class="col-no" rowspan="2">No</th><th class="col-jenis-pekerjaan" rowspan="2">Jenis Pekerjaan</th><th class="col-satuan" rowspan="2">Satuan</th><th class="col-volume" rowspan="2">Volume</th><th class="col-harga" colspan="2">Harga Satuan (Rp)</th><th class="col-harga" colspan="2">Total Harga (Rp)</th><th class="col-harga" rowspan="2">Total Harga (Rp)</th><th class="col-aksi" rowspan="2">Aksi</th></tr><tr><th class="col-harga">Material</th><th class="col-harga">Upah</th><th class="col-harga">Material</th><th class="col-harga">Upah</th></tr></thead><tbody class="boq-table-body" data-category="${categoryName}" data-scope="${scope}"></tbody><tfoot><tr><td colspan="8" style="text-align: right; font-weight: bold">Sub Total:</td><td class="sub-total-amount" style="font-weight: bold; text-align: right">Rp 0</td><td></td></tr></tfoot></table></div><div class="add-row-button-container"><button type="button" class="add-row-btn" data-category="${categoryName}" data-scope="${scope}">Tambah Item</button></div>`;
-    return tableWrapper;
 }
 
 async function initializePage() {
@@ -252,13 +301,7 @@ async function initializePage() {
     messageDiv.style.backgroundColor = '#007bff';
     messageDiv.style.color = 'white';
 
-    // Membuat semua tabel di awal secara dinamis
-    sipilTablesWrapper.innerHTML = '';
-    meTablesWrapper.innerHTML = '';
-    sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
-    meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
-    
-    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const PYTHON_API_BASE_URL = "http://127.0.0.1:5001";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
@@ -328,6 +371,19 @@ async function initializePage() {
         const selectedScope = event.target.value;
         sipilTablesWrapper.classList.toggle("hidden", selectedScope !== 'Sipil');
         meTablesWrapper.classList.toggle("hidden", selectedScope !== 'ME');
+        document.querySelectorAll(".boq-table-body").forEach(tbody => {
+            if (tbody.dataset.scope !== selectedScope) tbody.innerHTML = "";
+        });
+        if (selectedScope) {
+            document.querySelectorAll(`.boq-table-body[data-scope="${selectedScope}"]`).forEach((tbody) => {
+                if (tbody.children.length === 0) {
+                    const newRow = createBoQRow(tbody.dataset.category, selectedScope);
+                    tbody.appendChild(newRow);
+                    populateJenisPekerjaanOptionsForNewRow(newRow);
+                }
+            });
+        }
+        updateAllRowNumbersAndTotals();
     });
 
     currentResetButton.addEventListener("click", () => {
