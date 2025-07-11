@@ -22,7 +22,7 @@ CORS(app, resources={
     "origins": [
       "http://127.0.0.1:5500",  # For local development
       "http://localhost:5500",   # For local development
-      "https://building-process-two.vercel.app/" # YOUR VERCEL URL
+      "https://building-process-two.vercel.app" # YOUR VERCEL URL
     ]
   }
 })
