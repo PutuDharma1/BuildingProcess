@@ -196,11 +196,9 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
-    
     const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
     lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
-    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
@@ -242,9 +240,8 @@ const populateFormWithHistory = (data) => {
 
 // ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com/";
-    
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
+    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
@@ -255,28 +252,20 @@ async function handleFormSubmit() {
             return;
         }
     }
-    
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
-
-    // 1. Cek apakah kode toko sudah pernah disetujui.
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#dc3545";
         return;
     }
-    
-    // 2. Cek apakah kode toko sedang dalam proses review (pending).
-    // Izinkan hanya jika ini adalah revisi dari data yang ditolak.
-    const isRevision = lastRejectedSubmission && currentStoreCode === String(lastRejectedSubmission.Lokasi).toUpperCase();
-    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && !isRevision) {
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#ffc107";
         messageDiv.style.color = "black";
         return;
     }
-
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
@@ -285,7 +274,9 @@ async function handleFormSubmit() {
         const formDataToSend = {};
         const formData = new FormData(form);
         formData.forEach((value, key) => {
-            if (!key.includes('_Item')) formDataToSend[key] = value;
+            // PERUBAHAN UTAMA: Ubah nama kunci 'Lingkup Pekerjaan' menjadi 'Lingkup_Pekerjaan'
+            const newKey = key === "Lingkup Pekerjaan" ? "Lingkup_Pekerjaan" : key;
+            if (!newKey.includes('_Item')) formDataToSend[newKey] = value;
         });
         formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
         formDataToSend["Lokasi"] = currentStoreCode;
