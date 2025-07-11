@@ -1,5 +1,3 @@
-## file: server/google_services.py (Final & Robust Version)
-
 import os.path
 import io
 import gspread
@@ -49,33 +47,31 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
-    # ▼▼▼ FUNGSI INI DIPERBARUI DENGAN KONVERSI str() ▼▼▼
     def check_user_submissions(self, email):
-        """Checks the submission status for a given user email."""
-        all_data = self.data_entry_sheet.get_all_records()
-        active_codes = {"pending": [], "approved": []}
-        last_rejected_data = None
-        
-        for record in reversed(all_data):
-            # Gunakan .get() untuk mengambil data dengan aman
-            record_email = record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")
-            
-            # Konversi semua nilai menjadi string sebelum memanggil .strip()
-            if str(record_email).strip() == email:
-                status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
-                
-                if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
-                    last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
-
-                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
-                if not lokasi: continue
-
-                if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
-                    if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
-                elif status == config.STATUS.APPROVED:
-                    if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
-        
-        return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
+        try:
+            all_values = self.data_entry_sheet.get_all_values()
+            if len(all_values) <= 1:
+                return {"active_codes": {"pending": [], "approved": []}, "last_rejected_data": None}
+            headers = all_values[0]
+            records = [dict(zip(headers, row)) for row in all_values[1:]]
+            active_codes = {"pending": [], "approved": []}
+            last_rejected_data = None
+            for record in reversed(records):
+                if str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email:
+                    status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
+                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
+                        last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
+                    lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
+                    if not lokasi: continue
+                    if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
+                        if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
+                    elif status == config.STATUS.APPROVED:
+                        if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
+            return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
+        except gspread.exceptions.WorksheetNotFound:
+            raise Exception(f"Sheet dengan nama '{config.DATA_ENTRY_SHEET_NAME}' tidak ditemukan.")
+        except Exception as e:
+            raise e
 
     def get_sheet_headers(self, worksheet_name):
         return self.sheet.worksheet(worksheet_name).row_values(1)
@@ -102,13 +98,18 @@ class GoogleServiceProvider:
             print(f"Error updating cell [{row_index}, {column_name}]: {e}")
             return False
 
+    # ▼▼▼ PERUBAHAN UTAMA ADA DI FUNGSI INI ▼▼▼
     def get_email_by_jabatan(self, branch_name, jabatan):
+        """Mencari email berdasarkan cabang dan jabatan dengan mengabaikan spasi ekstra."""
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                # Konversi nilai dari sheet ke string sebelum membandingkan
-                if str(record.get('CABANG', '')).strip().lower() == str(branch_name).strip().lower() and \
-                   str(record.get('JABATAN', '')).strip().upper() == str(jabatan).strip().upper():
+                # Menggunakan .strip() untuk membersihkan spasi di awal/akhir
+                sheet_branch = str(record.get('CABANG', '')).strip()
+                sheet_jabatan = str(record.get('JABATAN', '')).strip()
+
+                if sheet_branch.lower() == str(branch_name).strip().lower() and \
+                   sheet_jabatan.upper() == str(jabatan).strip().upper():
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
