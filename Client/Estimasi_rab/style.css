@@ -148,15 +148,15 @@ table {
 }
 
 .col-no { width: 40px; } /* Kurangi dari 50px */
-.col-satuan { width: 60px; } /* Kurangi dari 80px ke 60px */
+.col-satuan { width: 50px; } /* Dikecilkan dari 60px ke 50px */
 .col-aksi { width: 80px; } /* Kurangi dari 100px */
 
 /* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 20%; } /* Kurangi dari 25% ke 20% */
+.col-jenis-pekerjaan { width: 22%; } /* Diperbesar sedikit karena kolom lain dikecilkan */
 .col-volume { width: 8%; }
-.col-harga { width: 16%; } /* Sedikit diperbesar */
-.col-total { width: 16%; } /* Sedikit diperbesar */
-.col-total-harga { width: 12%; } /* Kolom total harga akhir */
+.col-harga { width: 17%; } /* Diperbesar sedikit */
+.col-total { width: 17%; } /* Diperbesar sedikit */
+.col-total-harga { width: 10%; } /* Dikecilkan dari 12% ke 10% */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
 /* ======================================= */
@@ -241,21 +241,27 @@ table tbody td select {
   border: 1px solid #ddd;
   background-color: white;
   position: absolute;
-  width: auto; 
-  min-width: 350px; 
-  white-space: nowrap; 
+  width: calc(100% + 2px); /* Sesuaikan dengan lebar input + border */
+  max-width: 400px; /* Batasi lebar maksimum agar tidak terlalu lebar */
+  min-width: 250px; /* Lebar minimum yang wajar */
+  white-space: normal; /* Ubah dari nowrap ke normal agar text bisa wrap */
+  word-wrap: break-word; /* Izinkan text wrapping */
   z-index: 100;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   top: 100%;
-  left: 0;
+  left: -1px; /* Sesuaikan posisi agar sejajar dengan border input */
+  /* right: 0; Hapus right: 0 karena width: 100% sudah cukup */
 }
 
 .jenis-pekerjaan-suggestions li {
-  padding: 10px 12px;
+  padding: 8px 10px; /* Kurangi padding */
   cursor: pointer;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Kurangi font size */
+  line-height: 1.3; /* Tambahkan line height untuk readability */
+  word-wrap: break-word; /* Pastikan text bisa wrap */
+  white-space: normal; /* Izinkan text wrapping */
 }
 
 .jenis-pekerjaan-suggestions li:hover,
@@ -412,19 +418,31 @@ table tbody td select {
   }
 
   table {
-    min-width: 700px; /* Set minimum width untuk memaksa scrollbar */
+    min-width: 750px; /* Tingkatkan min-width untuk memastikan angka terlihat */
     width: auto; /* Biarkan tabel mengatur lebar sendiri */
   }
 
   /* Aturan lebar kolom khusus untuk mobile */
   .col-no { width: 35px; }
-  .col-satuan { width: 50px; } /* Lebih kecil di mobile */
+  .col-satuan { width: 40px; }
   .col-aksi { width: 70px; }
   .col-jenis-pekerjaan { width: 180px; } /* Fixed width untuk mobile */
   .col-volume { width: 60px; }
-  .col-harga { width: 80px; } /* Lebih kecil untuk mobile */
-  .col-total { width: 80px; } /* Lebih kecil untuk mobile */
-  .col-total-harga { width: 90px; }
+  .col-harga { width: 90px; } /* Diperbesar untuk mobile */
+  .col-total { width: 90px; } /* Diperbesar untuk mobile */
+  .col-total-harga { width: 80px; } /* Diperbesar untuk mobile */
+
+  /* Dropdown suggestions untuk mobile */
+  .jenis-pekerjaan-suggestions {
+    width: 100%;
+    max-width: 250px; /* Lebih kecil untuk mobile */
+    min-width: 150px;
+  }
+
+  .jenis-pekerjaan-suggestions li {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
 
   .button-group {
     flex-direction: column;
