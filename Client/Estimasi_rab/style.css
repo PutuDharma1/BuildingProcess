@@ -39,10 +39,10 @@ header h1 {
 
 /* Main Container Styles */
 .container {
-  max-width: 1200px; /* Increased max-width for better table display */
- 
+  max-width: 700px; /* Increased max-width for better table display */
+  margin: 10px auto;
   background-color: white;
-  padding: 30px;
+  padding: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
   border-radius: 12px; /* Slightly more rounded corners */
 }
