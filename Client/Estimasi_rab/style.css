@@ -257,7 +257,7 @@ table tbody td select {
 .jenis-pekerjaan-suggestions li {
   padding: 8px 10px; /* Kurangi padding */
   cursor: pointer;
-  text-align: left;
+  text-align: left; /* Pastikan rata kiri */
   font-size: 0.85rem; /* Kurangi font size */
   line-height: 1.3; /* Tambahkan line height untuk readability */
   word-wrap: break-word; /* Pastikan text bisa wrap */
@@ -418,7 +418,7 @@ table tbody td select {
   }
 
   table {
-    min-width: 750px; /* Tingkatkan min-width untuk memastikan angka terlihat */
+    min-width: 800px; /* Tingkatkan min-width untuk memastikan angka terlihat */
     width: auto; /* Biarkan tabel mengatur lebar sendiri */
   }
 
@@ -428,31 +428,23 @@ table tbody td select {
   .col-aksi { width: 70px; }
   .col-jenis-pekerjaan { width: 180px; } /* Fixed width untuk mobile */
   .col-volume { width: 60px; }
-  .col-harga { width: 90px; } /* Diperbesar untuk mobile */
-  .col-total { width: 90px; } /* Diperbesar untuk mobile */
-  .col-total-harga { width: 80px; } /* Diperbesar untuk mobile */
+  .col-harga { width: 95px; } /* Diperbesar lagi untuk mobile */
+  .col-total { width: 95px; } /* Diperbesar lagi untuk mobile */
+  .col-total-harga { width: 85px; } /* Diperbesar lagi untuk mobile */
 
   /* Dropdown suggestions untuk mobile */
   .jenis-pekerjaan-suggestions {
-    width: 100%;
-    max-width: 250px; /* Lebih kecil untuk mobile */
+    width: calc(100vw - 40px); /* Lebar dropdown sesuai viewport minus padding */
+    max-width: 300px; /* Batasi lebar maksimum */
     min-width: 150px;
+    left: 20px; /* Posisikan dari kiri halaman */
+    right: auto; /* Pastikan tidak ada konflik dengan right */
   }
 
   .jenis-pekerjaan-suggestions li {
     padding: 6px 8px;
     font-size: 0.8rem;
-  }
-
-  .button-group {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  table th,
-  table td {
-    padding: 6px 3px; /* Padding lebih kecil untuk mobile */
-    font-size: 0.7rem; /* Font lebih kecil untuk mobile */
+    text-align: left; /* Pastikan rata kiri */
   }
 
   table thead th {
@@ -466,6 +458,17 @@ table tbody td select {
     padding: 4px 2px; /* Padding input lebih kecil */
     font-size: 0.7rem;
     min-height: 28px; /* Tinggi minimum lebih kecil */
+  }
+
+  .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  table th,
+  table td {
+    padding: 6px 3px; /* Padding lebih kecil untuk mobile */
+    font-size: 0.7rem; /* Font lebih kecil untuk mobile */
   }
 
   .form-container button {
