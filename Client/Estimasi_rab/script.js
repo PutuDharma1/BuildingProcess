@@ -262,7 +262,7 @@ const populateFormWithHistory = (data) => {
 
 async function handleFormSubmit() {
     const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
