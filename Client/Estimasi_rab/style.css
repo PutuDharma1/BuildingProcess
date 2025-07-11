@@ -143,14 +143,35 @@ table {
 .col-aksi { width: 90px; }   
 
 /* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 24%; } /* Dikecilkan untuk memberi ruang */
-.col-volume { width: 8%; }
-.col-harga { width: 12%; }
-.col-total { width: 14%; } /* Dilebarkan sesuai permintaan */
-.col-total-harga { width: 16%; } /* Dilebarkan sesuai permintaan */
+.col-jenis-pekerjaan { width: 30%; } /* Diperbesar dari 24% ke 30% */
+.col-volume { width: 7%; } /* Dikurangi dari 8% ke 7% */
+.col-harga { width: 11%; } /* Dikurangi dari 12% ke 11% */
+.col-total { width: 13%; } /* Dikurangi dari 14% ke 13% */
+.col-total-harga { width: 15%; } /* Dikurangi dari 16% ke 15% */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
 /* ======================================= */
+
+/* Perbaikan untuk teks panjang dalam sel tabel */
+table tbody td {
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+}
+
+/* Khusus untuk kolom Jenis Pekerjaan */
+.col-jenis-pekerjaan {
+  text-align: left !important;
+  padding: 12px 10px !important;
+}
+
+/* Perbaikan untuk input dalam sel */
+table tbody td input[type="text"],
+table tbody td select {
+  min-height: 36px;
+  line-height: 1.2;
+}
 
 
 /* Custom styles for searchable dropdown (Jenis Pekerjaan) */
