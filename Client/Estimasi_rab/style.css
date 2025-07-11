@@ -118,6 +118,14 @@ table thead th {
   font-weight: 700;
   color: #d61027;
   text-transform: uppercase;
+  white-space: nowrap; /* Mencegah text wrapping */
+  font-size: 0.85rem; /* Sedikit mengecilkan font untuk muat dalam satu baris */
+  line-height: 1.2;
+}
+
+/* Aturan khusus untuk header yang mengandung sub-kolom */
+table thead th[colspan] {
+  min-width: 120px;
 }
 
 table tbody td input[type="number"],
@@ -145,8 +153,8 @@ table {
 /* Sisa kolom diatur dengan persentase */
 .col-jenis-pekerjaan { width: 30%; } /* Diperbesar dari 24% ke 30% */
 .col-volume { width: 7%; } /* Dikurangi dari 8% ke 7% */
-.col-harga { width: 11%; } /* Dikurangi dari 12% ke 11% */
-.col-total { width: 13%; } /* Dikurangi dari 14% ke 13% */
+.col-harga { width: 13%; } /* Diperbesar sedikit untuk menampung teks "MATERIAL" */
+.col-total { width: 15%; } /* Diperbesar sedikit untuk menampung teks "MATERIAL" */
 .col-total-harga { width: 15%; } /* Dikurangi dari 16% ke 15% */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
