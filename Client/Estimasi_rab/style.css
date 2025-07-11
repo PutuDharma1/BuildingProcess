@@ -148,15 +148,15 @@ table {
 }
 
 .col-no { width: 40px; } /* Kurangi dari 50px */
-.col-satuan { width: 60px; } /* Kurangi dari 80px ke 60px */
+.col-satuan { width: 50px; } /* Dikecilkan dari 60px ke 50px */
 .col-aksi { width: 80px; } /* Kurangi dari 100px */
 
 /* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 20%; } /* Kurangi dari 25% ke 20% */
+.col-jenis-pekerjaan { width: 22%; } /* Diperbesar sedikit karena kolom lain dikecilkan */
 .col-volume { width: 8%; }
-.col-harga { width: 16%; } /* Sedikit diperbesar */
-.col-total { width: 16%; } /* Sedikit diperbesar */
-.col-total-harga { width: 12%; } /* Kolom total harga akhir */
+.col-harga { width: 17%; } /* Diperbesar sedikit */
+.col-total { width: 17%; } /* Diperbesar sedikit */
+.col-total-harga { width: 10%; } /* Dikecilkan dari 12% ke 10% */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
 /* ======================================= */
@@ -418,13 +418,13 @@ table tbody td select {
 
   /* Aturan lebar kolom khusus untuk mobile */
   .col-no { width: 35px; }
-  .col-satuan { width: 50px; } /* Lebih kecil di mobile */
+  .col-satuan { width: 40px; } /* Dikecilkan lebih lagi untuk mobile */
   .col-aksi { width: 70px; }
   .col-jenis-pekerjaan { width: 180px; } /* Fixed width untuk mobile */
   .col-volume { width: 60px; }
   .col-harga { width: 80px; } /* Lebih kecil untuk mobile */
   .col-total { width: 80px; } /* Lebih kecil untuk mobile */
-  .col-total-harga { width: 90px; }
+  .col-total-harga { width: 70px; } /* Dikecilkan untuk mobile */
 
   .button-group {
     flex-direction: column;
