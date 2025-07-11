@@ -39,10 +39,10 @@ header h1 {
 
 /* Main Container Styles */
 .container {
-  max-width: 700px; /* Increased max-width for better table display */
-  margin: 10px auto;
+  max-width: 1200px; /* Diperbesar dari 950px ke 1200px */
+  margin: 20px auto;
   background-color: white;
-  padding: 20px;
+  padding: 30px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Softer, deeper shadow */
   border-radius: 12px; /* Slightly more rounded corners */
 }
@@ -90,7 +90,7 @@ header h1 {
 
 /* Table Specific Styles */
 .table-container {
-  overflow-x: auto;
+  overflow-x: visible; /* Ubah dari auto ke visible untuk menghilangkan scrollbar */
   margin-top: 25px;
   border-radius: 8px;
   border: 1px solid #e0e0e0;
@@ -100,16 +100,16 @@ header h1 {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  min-width: auto; /* Hilangkan min-width yang memaksa */
   margin-bottom: 0;
 }
 
 table th,
 table td {
   border: 1px solid #e0e0e0;
-  padding: 12px 8px;
+  padding: 10px 6px; /* Kurangi padding */
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem; /* Kurangi font size */
   word-wrap: break-word;
 }
 
@@ -119,24 +119,24 @@ table thead th {
   color: #d61027;
   text-transform: uppercase;
   white-space: nowrap; /* Mencegah text wrapping */
-  font-size: 0.85rem; /* Sedikit mengecilkan font untuk muat dalam satu baris */
+  font-size: 0.8rem; /* Lebih kecil untuk header */
   line-height: 1.2;
 }
 
 /* Aturan khusus untuk header yang mengandung sub-kolom */
 table thead th[colspan] {
-  min-width: 120px;
+  min-width: 100px; /* Kurangi dari 120px */
 }
 
 table tbody td input[type="number"],
 table tbody td input[type="text"],
 table tbody td select {
   width: 100%;
-  padding: 8px;
+  padding: 6px 4px; /* Kurangi padding */
   border: 1px solid #ddd;
   border-radius: 4px;
   box-sizing: border-box;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* ======================================= */
@@ -144,18 +144,18 @@ table tbody td select {
 /* ======================================= */
 table {
   table-layout: fixed !important; /* Memaksa tabel mematuhi lebar yang ditentukan */
-  min-width: 1300px; /* Perbesar minimum width tabel */
+  width: 100% !important; /* Pastikan tabel menggunakan 100% lebar container */
 }
 
-.col-no { width: 50px; } 
-.col-satuan { width: 80px; } 
-.col-aksi { width: 100px; }   
+.col-no { width: 40px; } /* Kurangi dari 50px */
+.col-satuan { width: 60px; } /* Kurangi dari 80px ke 60px */
+.col-aksi { width: 80px; } /* Kurangi dari 100px */
 
 /* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 25%; } /* Dikurangi sedikit */
+.col-jenis-pekerjaan { width: 20%; } /* Kurangi dari 25% ke 20% */
 .col-volume { width: 8%; }
-.col-harga { width: 15%; } /* Diperbesar untuk menampung 2 sub-kolom */
-.col-total { width: 15%; } /* Diperbesar untuk menampung 2 sub-kolom */
+.col-harga { width: 16%; } /* Sedikit diperbesar */
+.col-total { width: 16%; } /* Sedikit diperbesar */
 .col-total-harga { width: 12%; } /* Kolom total harga akhir */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
@@ -168,9 +168,9 @@ table thead th {
   color: #d61027;
   text-transform: uppercase;
   white-space: nowrap;
-  font-size: 0.8rem; /* Lebih kecil untuk muat */
+  font-size: 0.75rem; /* Lebih kecil lagi */
   line-height: 1.2;
-  padding: 8px 4px; /* Padding lebih kecil */
+  padding: 8px 3px; /* Padding lebih kecil */
 }
 
 /* Aturan untuk input dalam sel tabel */
@@ -178,18 +178,18 @@ table tbody td input[type="number"],
 table tbody td input[type="text"],
 table tbody td select {
   width: 100%;
-  padding: 6px 4px; /* Padding lebih kecil */
+  padding: 5px 3px; /* Padding lebih kecil */
   border: 1px solid #ddd;
   border-radius: 4px;
   box-sizing: border-box;
-  font-size: 0.85rem; /* Font lebih kecil */
+  font-size: 0.8rem; /* Font lebih kecil */
   text-align: center;
 }
 
 /* Aturan khusus untuk kolom angka */
 table tbody td {
-  padding: 8px 4px; /* Padding lebih kecil */
-  font-size: 0.85rem;
+  padding: 6px 3px; /* Padding lebih kecil */
+  font-size: 0.8rem; /* Font lebih kecil */
 }
 
 /* Aturan untuk kolom yang berisi angka */
@@ -205,19 +205,19 @@ table tbody td {
   word-wrap: break-word;
   word-break: break-word;
   hyphens: auto;
-  line-height: 1.4;
+  line-height: 1.3; /* Kurangi line height */
 }
 
 /* Khusus untuk kolom Jenis Pekerjaan */
 .col-jenis-pekerjaan {
   text-align: left !important;
-  padding: 12px 10px !important;
+  padding: 10px 8px !important; /* Kurangi padding */
 }
 
 /* Perbaikan untuk input dalam sel */
 table tbody td input[type="text"],
 table tbody td select {
-  min-height: 36px;
+  min-height: 32px; /* Kurangi dari 36px */
   line-height: 1.2;
 }
 
@@ -330,13 +330,13 @@ table tbody td select {
 /* Specific Button Styles */
 .delete-row-btn {
   background-color: #d61027 !important;
-  padding: 10px 15px !important;
+  padding: 8px 12px !important; /* Kurangi padding */
   border-radius: 5px !important;
   font-weight: 500 !important;
   margin: 0 !important;
   width: auto !important;
   flex: none !important;
-  font-size: 0.9rem !important;
+  font-size: 0.8rem !important; /* Kurangi font size */
 }
 
 .delete-row-btn:hover {
@@ -409,8 +409,8 @@ table tbody td select {
 
   table th,
   table td {
-    padding: 8px;
-    font-size: 0.85rem;
+    padding: 6px 3px; /* Padding lebih kecil untuk mobile */
+    font-size: 0.75rem; /* Font lebih kecil untuk mobile */
   }
 
   .form-container button {
