@@ -261,7 +261,7 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
     
     // Perbarui daftar field yang wajib diisi
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan', 'Luas Bangunan', 'Luas Terbangunan', 'Luas Area Terbuka', 'Luas Area Parkir', 'Luas Area Sales', 'Luas Gudang'];
