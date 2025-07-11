@@ -144,21 +144,61 @@ table tbody td select {
 /* ======================================= */
 table {
   table-layout: fixed !important; /* Memaksa tabel mematuhi lebar yang ditentukan */
+  min-width: 1300px; /* Perbesar minimum width tabel */
 }
 
 .col-no { width: 50px; } 
-.col-satuan { width: 70px; } 
-.col-aksi { width: 90px; }   
+.col-satuan { width: 80px; } 
+.col-aksi { width: 100px; }   
 
 /* Sisa kolom diatur dengan persentase */
-.col-jenis-pekerjaan { width: 30%; } /* Diperbesar dari 24% ke 30% */
-.col-volume { width: 7%; } /* Dikurangi dari 8% ke 7% */
-.col-harga { width: 13%; } /* Diperbesar sedikit untuk menampung teks "MATERIAL" */
-.col-total { width: 15%; } /* Diperbesar sedikit untuk menampung teks "MATERIAL" */
-.col-total-harga { width: 15%; } /* Dikurangi dari 16% ke 15% */
+.col-jenis-pekerjaan { width: 25%; } /* Dikurangi sedikit */
+.col-volume { width: 8%; }
+.col-harga { width: 15%; } /* Diperbesar untuk menampung 2 sub-kolom */
+.col-total { width: 15%; } /* Diperbesar untuk menampung 2 sub-kolom */
+.col-total-harga { width: 12%; } /* Kolom total harga akhir */
 /* ======================================= */
 /* ▲▲▲ BATAS ATURAN LEBAR KOLOM ▲▲▲ */
 /* ======================================= */
+
+/* Aturan khusus untuk sub-kolom dalam header */
+table thead th {
+  background-color: #fce4e4;
+  font-weight: 700;
+  color: #d61027;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-size: 0.8rem; /* Lebih kecil untuk muat */
+  line-height: 1.2;
+  padding: 8px 4px; /* Padding lebih kecil */
+}
+
+/* Aturan untuk input dalam sel tabel */
+table tbody td input[type="number"],
+table tbody td input[type="text"],
+table tbody td select {
+  width: 100%;
+  padding: 6px 4px; /* Padding lebih kecil */
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 0.85rem; /* Font lebih kecil */
+  text-align: center;
+}
+
+/* Aturan khusus untuk kolom angka */
+table tbody td {
+  padding: 8px 4px; /* Padding lebih kecil */
+  font-size: 0.85rem;
+}
+
+/* Aturan untuk kolom yang berisi angka */
+.col-harga input,
+.col-total input,
+.col-total-harga input {
+  text-align: right;
+  font-family: 'Courier New', monospace; /* Font monospace untuk angka */
+}
 
 /* Perbaikan untuk teks panjang dalam sel tabel */
 table tbody td {
