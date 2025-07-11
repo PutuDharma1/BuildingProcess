@@ -344,7 +344,7 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
