@@ -1,3 +1,5 @@
+## file: server/google_services.py (Final & Paling Aman)
+
 import os.path
 import io
 import gspread
@@ -98,21 +100,22 @@ class GoogleServiceProvider:
             print(f"Error updating cell [{row_index}, {column_name}]: {e}")
             return False
 
-    # ▼▼▼ PERUBAHAN UTAMA ADA DI FUNGSI INI ▼▼▼
+    # ▼▼▼ FUNGSI INI DIPERBARUI DENGAN PEMERIKSAAN PALING AMAN ▼▼▼
     def get_email_by_jabatan(self, branch_name, jabatan):
-        """Mencari email berdasarkan cabang dan jabatan dengan mengabaikan spasi ekstra."""
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                # Menggunakan .strip() untuk membersihkan spasi di awal/akhir
-                sheet_branch = str(record.get('CABANG', '')).strip()
-                sheet_jabatan = str(record.get('JABATAN', '')).strip()
+                # Mengonversi semua ke string, hapus spasi, dan samakan huruf kecil
+                sheet_branch = str(record.get('CABANG', '')).strip().lower()
+                input_branch = str(branch_name).strip().lower()
+                
+                sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
+                input_jabatan = str(jabatan).strip().upper()
 
-                if sheet_branch.lower() == str(branch_name).strip().lower() and \
-                   sheet_jabatan.upper() == str(jabatan).strip().upper():
+                if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
-            print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
+            print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' tidak ditemukan.")
         return None
 
     def send_email(self, to, subject, html_body, pdf_attachment_bytes=None, pdf_filename="RAB.pdf", cc=None):
