@@ -242,10 +242,9 @@ const populateFormWithHistory = (data) => {
 
 // ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com/";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     
-    // --- Validasi ---
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
@@ -256,20 +255,28 @@ async function handleFormSubmit() {
             return;
         }
     }
+    
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
+
+    // 1. Cek apakah kode toko sudah pernah disetujui.
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#dc3545";
         return;
     }
-    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
+    
+    // 2. Cek apakah kode toko sedang dalam proses review (pending).
+    // Izinkan hanya jika ini adalah revisi dari data yang ditolak.
+    const isRevision = lastRejectedSubmission && currentStoreCode === String(lastRejectedSubmission.Lokasi).toUpperCase();
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && !isRevision) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#ffc107";
         messageDiv.style.color = "black";
         return;
     }
+
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
@@ -277,20 +284,11 @@ async function handleFormSubmit() {
     try {
         const formDataToSend = {};
         const formData = new FormData(form);
-        
-        // Ambil semua field utama dari form
         formData.forEach((value, key) => {
-            // Jika nama field adalah "Lingkup Pekerjaan", ubah menjadi "Lingkup_Pekerjaan"
-            const newKey = (key === "Lingkup Pekerjaan") ? "Lingkup_Pekerjaan" : key;
-            if (!newKey.includes('_Item')) {
-                formDataToSend[newKey] = value;
-            }
+            if (!key.includes('_Item')) formDataToSend[key] = value;
         });
-
         formDataToSend["Email_Pembuat"] = sessionStorage.getItem('loggedInUserEmail') || '';
         formDataToSend["Lokasi"] = currentStoreCode;
-        
-        // Proses ulang semua baris item di tabel secara manual
         let itemCounter = 0;
         document.querySelectorAll(".boq-table-body:not(.hidden) .boq-item-row").forEach(row => {
             const jenisPekerjaanInput = row.querySelector(".jenis-pekerjaan");
@@ -307,12 +305,8 @@ async function handleFormSubmit() {
                 formDataToSend[`Total_Harga_Item_${itemCounter}`] = parseRupiah(row.querySelector(".total-harga").value);
             }
         });
-        
-        if (itemCounter === 0) {
-            throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
-        }
+        if (itemCounter === 0) throw new Error("Tidak ada item pekerjaan yang ditambahkan. Formulir tidak bisa dikirim.");
         formDataToSend["Grand_Total"] = parseRupiah(grandTotalAmount.textContent);
-        
         const response = await fetch(`${PYTHON_API_BASE_URL}/submit`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -321,7 +315,6 @@ async function handleFormSubmit() {
         const data = await response.json();
         console.log("Response from Python backend:", data);
         if (!response.ok) throw new Error(data.message || 'Submission failed.');
-        
         messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
         messageDiv.style.backgroundColor = "#28a745";
         setTimeout(() => { window.location.href = '/Homepage/'; }, 2500);
