@@ -241,21 +241,27 @@ table tbody td select {
   border: 1px solid #ddd;
   background-color: white;
   position: absolute;
-  width: auto; 
-  min-width: 350px; 
-  white-space: nowrap; 
+  width: 100%; /* Ubah dari auto ke 100% agar sesuai dengan kolom */
+  max-width: 300px; /* Batasi lebar maksimum */
+  min-width: 200px; /* Lebar minimum yang wajar */
+  white-space: normal; /* Ubah dari nowrap ke normal agar text bisa wrap */
+  word-wrap: break-word; /* Izinkan text wrapping */
   z-index: 100;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   top: 100%;
   left: 0;
+  right: 0; /* Tambahkan right: 0 untuk memastikan tidak melampaui batas */
 }
 
 .jenis-pekerjaan-suggestions li {
-  padding: 10px 12px;
+  padding: 8px 10px; /* Kurangi padding */
   cursor: pointer;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.85rem; /* Kurangi font size */
+  line-height: 1.3; /* Tambahkan line height untuk readability */
+  word-wrap: break-word; /* Pastikan text bisa wrap */
+  white-space: normal; /* Izinkan text wrapping */
 }
 
 .jenis-pekerjaan-suggestions li:hover,
@@ -425,6 +431,18 @@ table tbody td select {
   .col-harga { width: 80px; } /* Lebih kecil untuk mobile */
   .col-total { width: 80px; } /* Lebih kecil untuk mobile */
   .col-total-harga { width: 70px; } /* Dikecilkan untuk mobile */
+
+  /* Dropdown suggestions untuk mobile */
+  .jenis-pekerjaan-suggestions {
+    width: 100%;
+    max-width: 250px; /* Lebih kecil untuk mobile */
+    min-width: 150px;
+  }
+
+  .jenis-pekerjaan-suggestions li {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
 
   .button-group {
     flex-direction: column;
