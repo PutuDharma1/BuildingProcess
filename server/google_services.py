@@ -1,5 +1,3 @@
-## file: server/google_services.py (Final Version with Debugging)
-
 import os.path
 import io
 import gspread
@@ -71,7 +69,7 @@ class GoogleServiceProvider:
                         if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
             return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
         except gspread.exceptions.WorksheetNotFound:
-            raise Exception(f"Sheet with name '{config.DATA_ENTRY_SHEET_NAME}' not found.")
+            raise Exception(f"Sheet dengan nama '{config.DATA_ENTRY_SHEET_NAME}' tidak ditemukan.")
         except Exception as e:
             raise e
 
@@ -100,20 +98,15 @@ class GoogleServiceProvider:
             print(f"Error updating cell [{row_index}, {column_name}]: {e}")
             return False
 
-    # ▼▼▼ PERUBAHAN UTAMA ADA DI SINI ▼▼▼
     def get_email_by_jabatan(self, branch_name, jabatan):
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
                 sheet_branch = str(record.get('CABANG', '')).strip()
                 sheet_jabatan = str(record.get('JABATAN', '')).strip()
-                
-                # Tambahkan print() untuk melihat apa yang sebenarnya dibaca
-                print(f"Checking: Sheet Branch='{sheet_branch}' vs Input Branch='{branch_name.strip()}' | Sheet Jabatan='{sheet_jabatan}' vs Input Jabatan='{jabatan.strip()}'")
 
                 if sheet_branch.lower() == str(branch_name).strip().lower() and \
                    sheet_jabatan.upper() == str(jabatan).strip().upper():
-                    print("MATCH FOUND!")
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
