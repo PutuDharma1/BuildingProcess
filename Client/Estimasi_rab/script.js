@@ -12,7 +12,6 @@ let pendingStoreCodes = [];
 let approvedStoreCodes = [];
 let lastRejectedSubmission = null;
 
-// --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 
@@ -141,33 +140,12 @@ const autoFillPrices = (selectElement) => {
     calculateTotalPrice(volumeInput);
 };
 
-// ▼▼▼ FUNGSI INI DIPERBARUI DENGAN VALIDASI VOLUME ▼▼▼
 const createBoQRow = (category, scope) => {
     const row = document.createElement("tr");
     row.classList.add("boq-item-row");
     row.dataset.category = category;
     row.dataset.scope = scope;
-    // Menambahkan oninput ke elemen volume
-    row.innerHTML = `
-        <td class="col-no"><span class="row-number"></span></td>
-        <td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td>
-        <td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td>
-        <td class="col-volume">
-            <input 
-                type="text" 
-                class="volume form-control" 
-                name="Volume_Item" 
-                value="0.00" 
-                inputmode="decimal"
-                oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')"
-            />
-        </td>
-        <td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td>
-        <td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td>
-        <td class="col-harga"><input type="text" class="total-material form-control" disabled /></td>
-        <td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td>
-        <td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td>
-        <td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
+    row.innerHTML = `<td class="col-no"><span class="row-number"></span></td><td class="col-jenis-pekerjaan"><select class="jenis-pekerjaan form-control" name="Jenis_Pekerjaan_Item" required><option value="">-- Pilih --</option></select></td><td class="col-satuan"><input type="text" class="satuan form-control" name="Satuan_Item" required readonly /></td><td class="col-volume"><input type="text" class="volume form-control" name="Volume_Item" value="0.00" inputmode="decimal" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1').replace(/(\\.\\d{2})\\d+/, '$1')" /></td><td class="col-harga"><input type="text" class="harga-material form-control" name="Harga_Material_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="harga-upah form-control" name="Harga_Upah_Item" inputmode="numeric" required readonly /></td><td class="col-harga"><input type="text" class="total-material form-control" disabled /></td><td class="col-harga"><input type="text" class="total-upah form-control" disabled /></td><td class="col-harga"><input type="text" class="total-harga form-control" disabled /></td><td class="col-aksi"><button type="button" class="delete-row-btn">Hapus</button></td>`;
     
     row.querySelector(".volume").addEventListener("input", (e) => calculateTotalPrice(e.target));
     row.querySelector(".delete-row-btn").addEventListener("click", () => { row.remove(); updateAllRowNumbersAndTotals(); });
@@ -218,9 +196,11 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
+    
     const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
     lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
@@ -261,11 +241,8 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
-    
-    // Perbarui daftar field yang wajib diisi
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan', 'Luas Bangunan', 'Luas Terbangunan', 'Luas Area Terbuka', 'Luas Area Parkir', 'Luas Area Sales', 'Luas Gudang'];
-    
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
