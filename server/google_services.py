@@ -68,37 +68,37 @@ class GoogleServiceProvider:
             headers = all_values[0]
             records = [dict(zip(headers, row)) for row in all_values[1:]]
             
-            global_pending_codes = []
-            global_approved_codes = []
-            user_rejected_submissions = []
+            pending_codes = []
+            approved_codes = []
+            rejected_submissions = []
             
-            processed_locations_for_status = set()
+            processed_locations = set()
             
             # Iterasi dari baru ke lama untuk menentukan status final setiap kode toko
             for record in reversed(records):
-                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
-                if not lokasi or lokasi in processed_locations_for_status:
+                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
+                if not lokasi or lokasi in processed_locations:
                     continue
                 
                 status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
                 
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
-                    global_pending_codes.append(lokasi)
-                    processed_locations_for_status.add(lokasi)
+                    pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
-                    global_approved_codes.append(lokasi)
-                    processed_locations_for_status.add(lokasi)
-                elif str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email and \
-                     status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                    user_rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
-                    processed_locations_for_status.add(lokasi)
+                    approved_codes.append(lokasi)
+                # PERUBAHAN UTAMA: Filter email dihapus agar data revisi bersifat global
+                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                    rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
+
+                # Tandai lokasi ini sudah diproses agar tidak diambil lagi status lamanya
+                processed_locations.add(lokasi)
 
             return {
                 "active_codes": {
-                    "pending": global_pending_codes,
-                    "approved": global_approved_codes
+                    "pending": pending_codes,
+                    "approved": approved_codes
                 },
-                "rejected_submissions": user_rejected_submissions
+                "rejected_submissions": rejected_submissions
             }
         except Exception as e:
             raise e
