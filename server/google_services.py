@@ -1,5 +1,3 @@
-## file: server/google_services.py (Final & Most Robust Version)
-
 import os.path
 import io
 import gspread
@@ -26,7 +24,6 @@ class GoogleServiceProvider:
         ]
         self.creds = None
         
-        # Logic to handle credentials in both local and Render environments
         secret_dir = '/etc/secrets/'
         token_path = os.path.join(secret_dir, 'token.json')
         client_secret_path = os.path.join(secret_dir, 'client_secret.json')
@@ -61,45 +58,49 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
-    # ## LOGIC UPDATED HERE TO HANDLE EMPTY SHEETS ###
+    # ▼▼▼ LOGIKA PENCARIAN RIWAYAT DIPERBARUI TOTAL ▼▼▼
     def check_user_submissions(self, email):
-        """Safely checks user submission status, even if the sheet is empty."""
         try:
-            # Use get_all_values() which is safer for empty sheets
             all_values = self.data_entry_sheet.get_all_values()
-            
-            # If sheet is empty or has only a header, return empty data
             if len(all_values) <= 1:
-                return {"active_codes": {"pending": [], "approved": []}, "last_rejected_data": None}
+                return {"active_codes": {"pending": [], "approved": []}, "rejected_submissions": []}
 
             headers = all_values[0]
-            # Create a list of dictionaries from the data rows
             records = [dict(zip(headers, row)) for row in all_values[1:]]
             
-            active_codes = {"pending": [], "approved": []}
-            last_rejected_data = None
+            global_pending_codes = []
+            global_approved_codes = []
+            user_rejected_submissions = []
             
+            processed_locations_for_status = set()
+            
+            # Iterasi dari baru ke lama untuk menentukan status final setiap kode toko
             for record in reversed(records):
-                if str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email:
-                    status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
-                    
-                    if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
-                        last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
+                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
+                if not lokasi or lokasi in processed_locations_for_status:
+                    continue
+                
+                status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
+                
+                if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
+                    global_pending_codes.append(lokasi)
+                    processed_locations_for_status.add(lokasi)
+                elif status == config.STATUS.APPROVED:
+                    global_approved_codes.append(lokasi)
+                    processed_locations_for_status.add(lokasi)
+                elif str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email and \
+                     status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                    user_rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
+                    processed_locations_for_status.add(lokasi)
 
-                    lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
-                    if not lokasi: continue
-
-                    if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
-                        if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
-                    elif status == config.STATUS.APPROVED:
-                        if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
-            
-            return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
-
-        except gspread.exceptions.WorksheetNotFound:
-            raise Exception(f"Sheet with name '{config.DATA_ENTRY_SHEET_NAME}' not found.")
+            return {
+                "active_codes": {
+                    "pending": global_pending_codes,
+                    "approved": global_approved_codes
+                },
+                "rejected_submissions": user_rejected_submissions
+            }
         except Exception as e:
-            # Re-raise the exception to be caught by app.py
             raise e
 
     def get_sheet_headers(self, worksheet_name):
@@ -135,7 +136,6 @@ class GoogleServiceProvider:
                 input_branch = str(branch_name).strip().lower()
                 sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
                 input_jabatan = str(jabatan).strip().upper()
-
                 if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
