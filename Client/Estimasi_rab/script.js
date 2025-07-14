@@ -242,8 +242,7 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
-    
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
@@ -255,7 +254,6 @@ async function handleFormSubmit() {
             return;
         }
     }
-    
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
@@ -348,39 +346,46 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
-    if (userEmail) {
-        fetch(`${PYTHON_API_BASE_URL}/check_status?email=${encodeURIComponent(userEmail)}`)
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to check status from server');
-                return response.json();
-            })
-            .then(result => {
-                console.log("User submissions response:", result);
-                rejectedSubmissionsList = result.rejected_submissions || [];
+    const statusPromise = userEmail ? fetch(`${PYTHON_API_BASE_URL}/check_status?email=${encodeURIComponent(userEmail)}`).then(res => res.json()) : Promise.resolve(null);
+    const pricesPromise = fetch(APPS_SCRIPT_DATA_URL).then(res => res.json());
+
+    try {
+        const [statusResult, pricesData] = await Promise.all([statusPromise, pricesPromise]);
+
+        categorizedPrices = pricesData;
+        console.log("Data harga berhasil dimuat.");
+
+        if (statusResult) {
+            console.log("User submissions response:", statusResult);
+            if (statusResult.rejected_submissions) {
+                rejectedSubmissionsList = statusResult.rejected_submissions;
                 if (rejectedSubmissionsList.length > 0) {
                     const rejectedCodes = rejectedSubmissionsList.map(item => item.Lokasi).join(', ');
                     messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk kode toko: <strong>${rejectedCodes}</strong>. Masukkan salah satu kode untuk revisi.`;
                     messageDiv.style.backgroundColor = '#ffc107';
                     messageDiv.style.color = 'black';
                 } else {
-                     if (messageDiv.textContent.includes('Memuat data')) {
-                        messageDiv.style.display = 'none';
-                    }
+                    messageDiv.style.display = 'none';
                 }
-                if (result.active_codes) {
-                    pendingStoreCodes = result.active_codes.pending || [];
-                    approvedStoreCodes = result.active_codes.approved || [];
-                }
-            })
-            .catch(error => {
-                console.error("Gagal memeriksa status pengajuan:", error);
-                messageDiv.textContent = "Gagal memuat status pengajuan terakhir.";
-                messageDiv.style.display = 'block';
-                messageDiv.style.backgroundColor = '#dc3545';
-            });
+            }
+            if (statusResult.active_codes) {
+                pendingStoreCodes = statusResult.active_codes.pending || [];
+                approvedStoreCodes = statusResult.active_codes.approved || [];
+            }
+        } else {
+            messageDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Gagal memuat data awal:", error);
+        messageDiv.textContent = "Gagal memuat data. Mohon muat ulang halaman.";
+        messageDiv.style.display = 'block';
+        messageDiv.style.backgroundColor = '#dc3545';
+    } finally {
+        lingkupPekerjaanSelect.disabled = false;
     }
     
     document.getElementById('lokasi')?.addEventListener('input', function() {
@@ -392,25 +397,6 @@ async function initializePage() {
             }
         }
     });
-
-    const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
-    fetch(APPS_SCRIPT_DATA_URL)
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            return response.json();
-        })
-        .then(data => {
-            categorizedPrices = data;
-            console.log("Data harga berhasil dimuat.");
-            if (!lastRejectedSubmission && messageDiv.textContent.includes('Memuat data')) {
-                 messageDiv.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading price data:', error);
-            messageDiv.textContent = 'Gagal memuat data harga. Mohon muat ulang halaman.';
-            messageDiv.style.display = 'block';
-        });
 
     document.querySelectorAll(".add-row-btn").forEach(button => {
         button.addEventListener("click", () => {
