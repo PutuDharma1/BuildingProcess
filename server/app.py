@@ -82,7 +82,7 @@ def handle_approval():
     row_str = request.args.get('row')
     level = request.args.get('level')
     approver = request.args.get('approver')
-    base_render_url = "https://bnm-application.onrender.com"
+    base_render_url = "https://buildingprocess-fld9.onrender.com"
     logo_url = f"{base_render_url}{url_for('static', filename='Alfamart-Emblem.png')}"
     if not all([action, row_str, level, approver]):
         return render_template('response_page.html', title='Incomplete Parameters', message='URL parameters are incomplete or invalid.', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 400
