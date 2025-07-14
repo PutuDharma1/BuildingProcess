@@ -365,7 +365,6 @@ async function initializePage() {
                 rejectedSubmissionsList = statusResult.rejected_submissions;
                 if (rejectedSubmissionsList.length > 0) {
                     const rejectedCodes = rejectedSubmissionsList.map(item => item.Lokasi).join(', ');
-                    messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk kode toko: <strong>${rejectedCodes}</strong>. Masukkan salah satu kode untuk revisi.`;
                     messageDiv.style.backgroundColor = '#ffc107';
                     messageDiv.style.color = 'black';
                 } else {
