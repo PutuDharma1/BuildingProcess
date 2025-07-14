@@ -196,9 +196,11 @@ const populateFormWithHistory = (data) => {
     console.log("Populating form with rejected data:", data);
     form.reset();
     document.querySelectorAll(".boq-table-body").forEach(tbody => tbody.innerHTML = "");
+    
     const lingkupPekerjaanValue = data['Lingkup_Pekerjaan'] || data['Lingkup Pekerjaan'];
     lingkupPekerjaanSelect.value = lingkupPekerjaanValue;
     lingkupPekerjaanSelect.dispatchEvent(new Event('change'));
+    
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
             const elementName = key.replace(/_/g, " ");
@@ -240,7 +242,9 @@ const populateFormWithHistory = (data) => {
 
 // ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    
+    // 1. Validasi field wajib
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
@@ -252,20 +256,30 @@ async function handleFormSubmit() {
             return;
         }
     }
+    
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
+
+    // 2. Validasi status pengajuan
+    const isRevising = lastRejectedSubmission && currentStoreCode === String(lastRejectedSubmission.Lokasi).toUpperCase();
+
+    // Blokir jika kode sudah disetujui
     if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#dc3545";
         return;
     }
-    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
-        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
+    
+    // Blokir jika sedang dalam proses DAN ini BUKAN revisi
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && !isRevising) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sedang dalam proses persetujuan.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#ffc107";
         messageDiv.style.color = "black";
         return;
     }
+
+    // 3. Lanjutkan jika semua validasi lolos
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
@@ -274,7 +288,6 @@ async function handleFormSubmit() {
         const formDataToSend = {};
         const formData = new FormData(form);
         formData.forEach((value, key) => {
-            // PERUBAHAN UTAMA: Ubah nama kunci 'Lingkup Pekerjaan' menjadi 'Lingkup_Pekerjaan'
             const newKey = key === "Lingkup Pekerjaan" ? "Lingkup_Pekerjaan" : key;
             if (!newKey.includes('_Item')) formDataToSend[newKey] = value;
         });
@@ -304,7 +317,6 @@ async function handleFormSubmit() {
             body: JSON.stringify(formDataToSend),
         });
         const data = await response.json();
-        console.log("Response from Python backend:", data);
         if (!response.ok) throw new Error(data.message || 'Submission failed.');
         messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
         messageDiv.style.backgroundColor = "#28a745";
@@ -345,7 +357,7 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
