@@ -10,8 +10,9 @@ let currentResetButton;
 let categorizedPrices = {};
 let pendingStoreCodes = [];
 let approvedStoreCodes = [];
-let lastRejectedSubmission = null;
+let rejectedSubmissionsList = []; // Diubah menjadi list untuk menampung semua data revisi
 
+// --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 
@@ -240,11 +241,10 @@ const populateFormWithHistory = (data) => {
     }, 200);
 };
 
-// ▼▼▼ FUNGSI INI DIPERBARUI TOTAL ▼▼▼
 async function handleFormSubmit() {
     const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
     
-    // 1. Validasi field wajib
+    // Validasi field wajib
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
@@ -258,12 +258,12 @@ async function handleFormSubmit() {
     }
     
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
-
-    // 2. Validasi status pengajuan
-    const isRevising = lastRejectedSubmission && currentStoreCode === String(lastRejectedSubmission.Lokasi).toUpperCase();
+    
+    // Tentukan apakah pengguna sedang dalam alur revisi
+    const isRevising = rejectedSubmissionsList.some(sub => String(sub.Lokasi).toUpperCase() === currentStoreCode);
 
     // Blokir jika kode sudah disetujui
-    if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
+    if (approvedStoreCodes.includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#dc3545";
@@ -271,7 +271,7 @@ async function handleFormSubmit() {
     }
     
     // Blokir jika sedang dalam proses DAN ini BUKAN revisi
-    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && !isRevising) {
+    if (pendingStoreCodes.includes(currentStoreCode) && !isRevising) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sedang dalam proses persetujuan.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#ffc107";
@@ -279,7 +279,6 @@ async function handleFormSubmit() {
         return;
     }
 
-    // 3. Lanjutkan jika semua validasi lolos
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
@@ -368,9 +367,10 @@ async function initializePage() {
             })
             .then(result => {
                 console.log("User submissions response:", result);
-                if (result.last_rejected_data) {
-                    lastRejectedSubmission = result.last_rejected_data;
-                    messageDiv.innerHTML = `Ditemukan data pengajuan yang ditolak untuk kode toko <strong>${lastRejectedSubmission.Lokasi}</strong>. Masukkan kode toko yang sama untuk memuat ulang data.`;
+                rejectedSubmissionsList = result.rejected_submissions || [];
+                if (rejectedSubmissionsList.length > 0) {
+                    const rejectedCodes = rejectedSubmissionsList.map(item => item.Lokasi).join(', ');
+                    messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk kode toko: <strong>${rejectedCodes}</strong>. Masukkan salah satu kode untuk revisi.`;
                     messageDiv.style.backgroundColor = '#ffc107';
                     messageDiv.style.color = 'black';
                 } else {
@@ -393,9 +393,10 @@ async function initializePage() {
     
     document.getElementById('lokasi')?.addEventListener('input', function() {
         const currentStoreCode = this.value.toUpperCase();
-        if (lastRejectedSubmission && currentStoreCode === String(lastRejectedSubmission.Lokasi).toUpperCase()) {
+        const rejectedData = rejectedSubmissionsList.find(sub => String(sub.Lokasi).toUpperCase() === currentStoreCode);
+        if (rejectedData) {
             if (confirm("Data pengajuan yang ditolak untuk kode toko ini ditemukan. Apakah Anda ingin memuat ulang data tersebut untuk direvisi?")) {
-                populateFormWithHistory(lastRejectedSubmission);
+                populateFormWithHistory(rejectedData);
             }
         }
     });
