@@ -64,7 +64,7 @@ def submit_form():
         if not cabang: raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
         coordinator_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.KOORDINATOR)
         if not coordinator_email: raise Exception(f"Coordinator email for branch '{cabang}' not found.")
-        base_url = "https://bnm-application.onrender.com"
+        base_url = "https://buildingprocess-fld9.onrender.com"
         approval_url = f"{base_url}/handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         rejection_url = f"{base_url}/handle_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         email_html = render_template('email_template.html', level='Koordinator', form_data=data, approval_url=approval_url, rejection_url=rejection_url)
