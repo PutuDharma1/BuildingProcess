@@ -1,177 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Homepage - Alfamart</title>
-    
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Homepage - Aplikasi RAB</title>
+    <link rel="stylesheet" href="/Homepage/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f4f4f4;
-        margin: 0;
-        padding: 0;
-        color: #333;
-      }
-
-      header {
-        background-color: #d61027; /* Alfamart Fire Engine Red */
-        color: white;
-        text-align: center;
-        padding: 15px 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        border-bottom-left-radius: 10px;
-        border-bottom-right-radius: 10px;
-      }
-
-      header img {
-        width: 70px;
-        height: auto;
-        margin-right: 20px;
-        position: absolute;
-        left: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-      }
-
-      header h1 {
-        margin: 0;
-        font-size: 2.5rem;
-        letter-spacing: 1px;
-      }
-
-      .container {
-        max-width: 800px;
-        margin: 30px auto;
-        background-color: white;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        border-radius: 12px;
-      }
-
-      .search-container {
-        margin-bottom: 20px;
-      }
-
-      .search-container input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid #c2c2c2;
-        border-radius: 6px;
-        font-size: 1rem;
-        box-sizing: border-box;
-        transition: border-color 0.3s, box-shadow 0.3s;
-      }
-
-      .search-container input:focus {
-        border-color: #d61027;
-        box-shadow: 0 0 0 3px rgba(214, 16, 39, 0.2);
-        outline: none;
-      }
-
-      .menu-container {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .menu-container a {
-        padding: 15px 20px;
-        background-color: #f0f0f0;
-        color: #1756c2;
-        text-decoration: none;
-        text-align: center;
-        font-size: 1.2rem;
-        border-radius: 8px;
-        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
-        font-weight: 600;
-        border: 1px solid #e0e0e0;
-      }
-
-      .menu-container a:hover {
-        background-color: #efcf00;
-        color: #d61027;
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      }
-
-      /* Responsive adjustments for mobile */
-      @media (max-width: 768px) {
-        header {
-          flex-direction: column; /* Stack logo and title vertically */
-          padding: 20px; /* Adjust padding for better look when stacked */
-          height: auto; /* Allow height to adjust */
-        }
-
-        header img {
-          position: static; /* Remove absolute positioning */
-          transform: none; /* Remove transform */
-          margin-right: 0; /* Remove right margin */
-          margin-bottom: 10px; /* Add space below logo */
-          width: 60px; /* Slightly smaller logo for mobile */
-        }
-
-        header h1 {
-          font-size: 1.8rem; /* Smaller title font for mobile */
-          text-align: center; /* Ensure title is centered */
-        }
-
-        .container {
-          margin: 20px;
-          padding: 25px;
-        }
-
-        .menu-container a {
-          font-size: 1.1rem;
-          padding: 12px 15px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <img src="../Assets/Alfamart-Emblem.png" alt="Alfamart Logo" />
-      <h1>Formulir Pengukuran & Rencana Anggaran</h1>
+</head>
+<body>
+    <header class="main-header">
+        <img src="/Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo">
+        <h1>Building & Maintenance</h1>
     </header>
 
-    <div class="container">
-      <div class="search-container">
-        <input type="text" id="formSearchInput" placeholder="Cari Form..." />
-      </div>
+    <main class="container">
+        <div class="welcome-message">
+            <h2>Selamat Datang, <span id="user-name">Pengguna</span>!</h2>
+            <p>Pilih menu di bawah untuk melanjutkan.</p>
+        </div>
 
-      <div class="menu-container" id="formList">
-        <a href="/Estimasi_rab\index.html">Estimasi Rencana Anggaran Biaya</a>
-      </div>
-    </div>
+        <nav class="menu-container">
+            <a href="/Estimasi_rab/" class="menu-item">
+                <h3>Estimasi RAB</h3>
+                <p>Buat atau revisi Rencana Anggaran Biaya.</p>
+            </a>
+            <a href="#" class="menu-item disabled">
+                <h3>Laporan</h3>
+                <p>Lihat laporan pengajuan (segera hadir).</p>
+            </a>
+            <a href="#" class="menu-item disabled">
+                <h3>Pengaturan</h3>
+                <p>Atur profil Anda (segera hadir).</p>
+            </a>
+        </nav>
+        
+        <div class="logout-container">
+            <button id="logout-button" class="btn-logout">Logout</button>
+        </div>
+    </main>
 
     <script>
-      const isAuthenticated = sessionStorage.getItem('authenticated');
+        // Security & Personalization Script
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAuthenticated = sessionStorage.getItem('authenticated');
+            const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
-      if (!isAuthenticated) {
-          window.location.href = '/index.html'; // Redirect to login page if not authenticated
-      }
-
-      document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('formSearchInput');
-        const formLinks = document.querySelectorAll('#formList a');
-
-        searchInput.addEventListener('input', (event) => {
-          const searchTerm = event.target.value.toLowerCase();
-
-          formLinks.forEach(link => {
-            const linkText = link.textContent.toLowerCase();
-            if (linkText.includes(searchTerm)) {
-              link.style.display = 'block';
-            } else {
-              link.style.display = 'none';
+            if (!isAuthenticated) {
+                window.location.href = '/'; // Redirect ke halaman login
             }
-          });
+
+            if (userEmail) {
+                const userNameSpan = document.getElementById('user-name');
+                if(userNameSpan) {
+                    // Ambil bagian nama dari email sebelum simbol @
+                    userNameSpan.textContent = userEmail.split('@')[0];
+                }
+            }
+
+            const logoutButton = document.getElementById('logout-button');
+            if(logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    sessionStorage.clear(); // Hapus semua data sesi
+                    window.location.href = '/'; // Arahkan ke halaman login
+                });
+            }
         });
-      });
     </script>
-  </body>
+</body>
 </html>
