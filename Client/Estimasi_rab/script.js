@@ -10,7 +10,7 @@ let currentResetButton;
 let categorizedPrices = {};
 let pendingStoreCodes = [];
 let approvedStoreCodes = [];
-let rejectedSubmissionsList = []; // Diubah menjadi list untuk menampung semua data revisi
+let lastRejectedSubmission = null;
 
 // --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
@@ -242,9 +242,8 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     
-    // Validasi field wajib
     const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
@@ -258,27 +257,19 @@ async function handleFormSubmit() {
     }
     
     const currentStoreCode = String(form.elements['Lokasi'].value).toUpperCase();
-    
-    // Tentukan apakah pengguna sedang dalam alur revisi
-    const isRevising = rejectedSubmissionsList.some(sub => String(sub.Lokasi).toUpperCase() === currentStoreCode);
-
-    // Blokir jika kode sudah disetujui
-    if (approvedStoreCodes.includes(currentStoreCode)) {
+    if (approvedStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode)) {
         messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah pernah diajukan dan disetujui.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#dc3545";
         return;
     }
-    
-    // Blokir jika sedang dalam proses DAN ini BUKAN revisi
-    if (pendingStoreCodes.includes(currentStoreCode) && !isRevising) {
-        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sedang dalam proses persetujuan.`;
+    if (pendingStoreCodes.map(code => String(code).toUpperCase()).includes(currentStoreCode) && (!lastRejectedSubmission || currentStoreCode !== String(lastRejectedSubmission.Lokasi).toUpperCase())) {
+        messageDiv.textContent = `Error: Kode toko ${currentStoreCode} sudah memiliki pengajuan yang sedang direview.`;
         messageDiv.style.display = "block";
         messageDiv.style.backgroundColor = "#ffc107";
         messageDiv.style.color = "black";
         return;
     }
-
     messageDiv.textContent = "Mengirim data...";
     messageDiv.style.display = "block";
     messageDiv.style.backgroundColor = '#007bff';
@@ -316,6 +307,7 @@ async function handleFormSubmit() {
             body: JSON.stringify(formDataToSend),
         });
         const data = await response.json();
+        console.log("Response from Python backend:", data);
         if (!response.ok) throw new Error(data.message || 'Submission failed.');
         messageDiv.textContent = data.message || "Data berhasil terkirim! Anda akan diarahkan ke Beranda.";
         messageDiv.style.backgroundColor = "#28a745";
@@ -356,7 +348,7 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
     if (userEmail) {
