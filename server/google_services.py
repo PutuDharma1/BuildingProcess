@@ -1,3 +1,5 @@
+## file: server/google_services.py (Final & Most Robust Version)
+
 import os.path
 import io
 import gspread
@@ -23,15 +25,27 @@ class GoogleServiceProvider:
             'https://www.googleapis.com/auth/drive.file'
         ]
         self.creds = None
-        if os.path.exists('token.json'):
-            self.creds = Credentials.from_authorized_user_file('token.json', self.scopes)
+        
+        # Logic to handle credentials in both local and Render environments
+        secret_dir = '/etc/secrets/'
+        token_path = os.path.join(secret_dir, 'token.json')
+        client_secret_path = os.path.join(secret_dir, 'client_secret.json')
+
+        if not os.path.exists(secret_dir):
+            token_path = 'token.json'
+            client_secret_path = 'client_secret.json'
+
+        if os.path.exists(token_path):
+            self.creds = Credentials.from_authorized_user_file(token_path, self.scopes)
+        
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file('client_secret.json', self.scopes)
+                flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, self.scopes)
                 self.creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
+            
+            with open(token_path, 'w') as token:
                 token.write(self.creds.to_json())
 
         self.gspread_client = gspread.authorize(self.creds)
@@ -47,30 +61,45 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
+    # ## LOGIC UPDATED HERE TO HANDLE EMPTY SHEETS ###
     def check_user_submissions(self, email):
+        """Safely checks user submission status, even if the sheet is empty."""
         try:
+            # Use get_all_values() which is safer for empty sheets
             all_values = self.data_entry_sheet.get_all_values()
+            
+            # If sheet is empty or has only a header, return empty data
             if len(all_values) <= 1:
                 return {"active_codes": {"pending": [], "approved": []}, "last_rejected_data": None}
+
             headers = all_values[0]
+            # Create a list of dictionaries from the data rows
             records = [dict(zip(headers, row)) for row in all_values[1:]]
+            
             active_codes = {"pending": [], "approved": []}
             last_rejected_data = None
+            
             for record in reversed(records):
                 if str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email:
                     status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
+                    
                     if status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER] and not last_rejected_data:
                         last_rejected_data = {key.replace(' ', '_'): val for key, val in record.items()}
+
                     lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip()
                     if not lokasi: continue
+
                     if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
                         if lokasi not in active_codes["pending"]: active_codes["pending"].append(lokasi)
                     elif status == config.STATUS.APPROVED:
                         if lokasi not in active_codes["approved"]: active_codes["approved"].append(lokasi)
+            
             return {"active_codes": active_codes, "last_rejected_data": last_rejected_data}
+
         except gspread.exceptions.WorksheetNotFound:
-            raise Exception(f"Sheet dengan nama '{config.DATA_ENTRY_SHEET_NAME}' tidak ditemukan.")
+            raise Exception(f"Sheet with name '{config.DATA_ENTRY_SHEET_NAME}' not found.")
         except Exception as e:
+            # Re-raise the exception to be caught by app.py
             raise e
 
     def get_sheet_headers(self, worksheet_name):
@@ -102,11 +131,12 @@ class GoogleServiceProvider:
         try:
             cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
             for record in cabang_sheet.get_all_records():
-                sheet_branch = str(record.get('CABANG', '')).strip()
-                sheet_jabatan = str(record.get('JABATAN', '')).strip()
+                sheet_branch = str(record.get('CABANG', '')).strip().lower()
+                input_branch = str(branch_name).strip().lower()
+                sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
+                input_jabatan = str(jabatan).strip().upper()
 
-                if sheet_branch.lower() == str(branch_name).strip().lower() and \
-                   sheet_jabatan.upper() == str(jabatan).strip().upper():
+                if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
                     return record.get('EMAIL_SAT')
         except gspread.exceptions.WorksheetNotFound:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
