@@ -10,9 +10,8 @@ let currentResetButton;
 let categorizedPrices = {};
 let pendingStoreCodes = [];
 let approvedStoreCodes = [];
-let lastRejectedSubmission = null;
+let rejectedSubmissionsList = [];
 
-// --- Kategori Pekerjaan ---
 const sipilCategories = ["PEKERJAAN PERSIAPAN", "PEKERJAAN BOBOKAN / BONGKARAN", "PEKERJAAN TANAH", "PEKERJAAN PONDASI & BETON", "PEKERJAAN PASANGAN", "PEKERJAAN BESI", "PEKERJAAN KERAMIK", "PEKERJAAN PLUMBING", "PEKERJAAN SANITARY & ACECORIES", "PEKERJAAN ATAP", "PEKERJAAN KUSEN, PINTU & KACA", "PEKERJAAN FINISHING", "PEKERJAAN TAMBAHAN"];
 const meCategories = ["INSTALASI", "FIXTURE", "PEKERJAAN TAMBAH DAYA LISTRIK"];
 
@@ -242,8 +241,8 @@ const populateFormWithHistory = (data) => {
 };
 
 async function handleFormSubmit() {
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
-    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup_Pekerjaan'];
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
+    const requiredFields = ['Lokasi', 'Proyek', 'Cabang', 'Lingkup Pekerjaan'];
     for (const fieldName of requiredFields) {
         const element = form.elements[fieldName];
         if (!element || !element.value.trim()) {
@@ -346,7 +345,7 @@ async function initializePage() {
     sipilCategories.forEach(category => sipilTablesWrapper.appendChild(createTableStructure(category, "Sipil")));
     meCategories.forEach(category => meTablesWrapper.appendChild(createTableStructure(category, "ME")));
     
-    const PYTHON_API_BASE_URL = "https://buildingprocess-fld9.onrender.com";
+    const PYTHON_API_BASE_URL = "https://bnm-application.onrender.com";
     const APPS_SCRIPT_DATA_URL = "https://script.google.com/macros/s/AKfycbx2rtKmaZBb_iRBRL-DOemjVhAp3GaCwsthtwtfdtvdtuO2bRVlmONboB8wE-CZU7Hc/exec";
     const userEmail = sessionStorage.getItem('loggedInUserEmail');
 
@@ -365,6 +364,7 @@ async function initializePage() {
                 rejectedSubmissionsList = statusResult.rejected_submissions;
                 if (rejectedSubmissionsList.length > 0) {
                     const rejectedCodes = rejectedSubmissionsList.map(item => item.Lokasi).join(', ');
+                    messageDiv.innerHTML = `Ditemukan pengajuan yang ditolak untuk kode toko: <strong>${rejectedCodes}</strong>. Masukkan salah satu kode untuk revisi.`;
                     messageDiv.style.backgroundColor = '#ffc107';
                     messageDiv.style.color = 'black';
                 } else {

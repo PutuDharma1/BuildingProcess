@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 # Konfigurasi CORS untuk secara eksplisit mengizinkan frontend Vercel Anda
 cors = CORS(app, resources={
-  r"/*": {
+  r"/api/*": { # Hanya izinkan akses ke endpoint API
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
@@ -81,8 +81,8 @@ def submit_form():
         
         cabang = data.get('Cabang')
         if not cabang:
-            raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
-        
+             raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
+
         coordinator_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.KOORDINATOR)
         if not coordinator_email:
             raise Exception(f"Coordinator email for branch '{cabang}' not found. Please check the 'Cabang' sheet.")
@@ -131,8 +131,8 @@ def handle_approval():
         
         current_time = datetime.datetime.now().isoformat()
         cabang = row_data.get(config.COLUMN_NAMES.CABANG)
-        jenis_toko = row_data.get(config.COLUMN_NAMES.PROYEK, 'N_A')
-        kode_toko = row_data.get(config.COLUMN_NAMES.LOKASI, 'N_A')
+        jenis_toko = row_data.get(config.COLUMN_NAMES.PROYEK, 'N/A')
+        kode_toko = row_data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
         creator_email = row_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
 
         if action == 'reject':
@@ -164,8 +164,9 @@ def handle_approval():
             if manager_email:
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
-                approval_url_manager = f"{base_render_url}/api/handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
-                rejection_url_manager = f"{base_render_url}/api/handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
+                base_url = "https://buildingprocess-fld9.onrender.com"
+                approval_url_manager = f"{base_url}/api/handle_approval?action=approve&row={row}&level=manager&approver={manager_email}"
+                rejection_url_manager = f"{base_url}/api/handle_approval?action=reject&row={row}&level=manager&approver={manager_email}"
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
