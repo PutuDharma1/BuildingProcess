@@ -14,7 +14,6 @@ load_dotenv()
 app = Flask(__name__)
 
 # Konfigurasi CORS untuk secara eksplisit mengizinkan frontend Vercel Anda
-# PERUBAHAN DI BAWAH INI: r"/api/*" diubah menjadi r"/*" untuk mencakup semua rute
 cors = CORS(app, resources={
   r"/*": { 
     "origins": [
@@ -57,7 +56,9 @@ def check_status():
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        # PERUBAHAN: Penanganan error yang lebih aman
+        error_message = str(e.args[0]) if e.args else "An unknown error occurred in check_status."
+        return jsonify({"error": error_message}), 500
 
 @app.route('/api/submit', methods=['POST'])
 def submit_form():
@@ -102,7 +103,9 @@ def submit_form():
         if new_row_index:
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
+        # PERUBAHAN: Penanganan error yang lebih aman
+        error_message = str(e.args[0]) if e.args else "An unknown error occurred during form submission."
+        return jsonify({"status": "error", "message": error_message}), 500
 
 @app.route('/api/handle_approval', methods=['GET'])
 def handle_approval():
@@ -199,8 +202,9 @@ def handle_approval():
 
     except Exception as e:
         traceback.print_exc()
-        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {e}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
+        # PERUBAHAN: Penanganan error yang lebih aman
+        error_message = str(e.args[0]) if e.args else "An unknown error occurred in handle_approval."
+        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
