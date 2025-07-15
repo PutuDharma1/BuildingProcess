@@ -56,7 +56,6 @@ def check_status():
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
-        # PERUBAHAN: Penanganan error yang lebih aman
         error_message = str(e.args[0]) if e.args else "An unknown error occurred in check_status."
         return jsonify({"error": error_message}), 500
 
@@ -83,7 +82,7 @@ def submit_form():
         
         cabang = data.get('Cabang')
         if not cabang:
-             raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
+              raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
 
         coordinator_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.KOORDINATOR)
         if not coordinator_email:
@@ -103,7 +102,6 @@ def submit_form():
         if new_row_index:
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         traceback.print_exc()
-        # PERUBAHAN: Penanganan error yang lebih aman
         error_message = str(e.args[0]) if e.args else "An unknown error occurred during form submission."
         return jsonify({"status": "error", "message": error_message}), 500
 
@@ -174,7 +172,14 @@ def handle_approval():
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-                google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
+                # PERBAIKAN KODE: Menggunakan keyword arguments agar lebih jelas dan aman
+                google_provider.send_email(
+                    to=manager_email, 
+                    subject=f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", 
+                    html_body=email_html_manager, 
+                    pdf_attachment_bytes=pdf_bytes, 
+                    pdf_filename=pdf_filename
+                )
             return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
         
         elif level == 'manager' and action == 'approve':
@@ -197,12 +202,19 @@ def handle_approval():
                 cc_list = list(filter(None, set([manager_email, coordinator_email])))
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
                 email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
-                google_provider.send_email(to=support_email, cc=cc_list, subject=subject, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
+                # PERBAIKAN KODE: Menambahkan argumen 'html_body' yang hilang
+                google_provider.send_email(
+                    to=support_email, 
+                    cc=cc_list, 
+                    subject=subject, 
+                    html_body=email_body_html, 
+                    pdf_attachment_bytes=final_pdf_bytes, 
+                    pdf_filename=final_pdf_filename
+                )
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:
         traceback.print_exc()
-        # PERUBAHAN: Penanganan error yang lebih aman
         error_message = str(e.args[0]) if e.args else "An unknown error occurred in handle_approval."
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
