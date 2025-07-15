@@ -86,9 +86,10 @@ class GoogleServiceProvider:
                     pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
-                # PERUBAHAN UTAMA: Filter email dihapus agar data revisi bersifat global
+                # PERUBAHAN UTAMA: Filter email dihapus dan dibuat dictionary baru
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                    rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
+                    submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
+                    rejected_submissions.append(submission_data)
 
                 # Tandai lokasi ini sudah diproses agar tidak diambil lagi status lamanya
                 processed_locations.add(lokasi)
