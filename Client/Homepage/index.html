@@ -24,14 +24,6 @@
                 <h3>Estimasi RAB</h3>
                 <p>Buat atau revisi Rencana Anggaran Biaya.</p>
             </a>
-            <a href="#" class="menu-item disabled">
-                <h3>Laporan</h3>
-                <p>Lihat laporan pengajuan (segera hadir).</p>
-            </a>
-            <a href="#" class="menu-item disabled">
-                <h3>Pengaturan</h3>
-                <p>Atur profil Anda (segera hadir).</p>
-            </a>
         </nav>
         
         <div class="logout-container">
@@ -40,48 +32,28 @@
     </main>
 
     <script>
+        // Security & Personalization Script
         document.addEventListener('DOMContentLoaded', () => {
             const isAuthenticated = sessionStorage.getItem('authenticated');
             const userEmail = sessionStorage.getItem('loggedInUserEmail');
-            const userNameSpan = document.getElementById('user-name');
-            const logoutButton = document.getElementById('logout-button');
 
             if (!isAuthenticated) {
-                window.location.href = '/'; 
+                window.location.href = '/'; // Redirect ke halaman login
             }
 
-            const setUserName = (name) => {
-                if (userNameSpan) {
-                    userNameSpan.textContent = name;
-                }
-            };
-            
             if (userEmail) {
-                const backendUrl = "https://bnm-application.onrender.com"; // URL Backend Render Anda
-                fetch(`${backendUrl}/api/user_info?email=${encodeURIComponent(userEmail)}`)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('User details not found');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.nama_lengkap) {
-                            setUserName(data.nama_lengkap);
-                        } else {
-                            setUserName(userEmail.split('@')[0]); // Fallback jika nama tidak ada
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching user name:', error);
-                        setUserName(userEmail.split('@')[0]); // Fallback jika terjadi error
-                    });
+                const userNameSpan = document.getElementById('user-name');
+                if(userNameSpan) {
+                    // Ambil bagian nama dari email sebelum simbol @
+                    userNameSpan.textContent = userEmail.split('@')[0];
+                }
             }
 
+            const logoutButton = document.getElementById('logout-button');
             if(logoutButton) {
                 logoutButton.addEventListener('click', () => {
-                    sessionStorage.clear();
-                    window.location.href = '/';
+                    sessionStorage.clear(); // Hapus semua data sesi
+                    window.location.href = '/'; // Arahkan ke halaman login
                 });
             }
         });

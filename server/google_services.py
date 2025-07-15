@@ -39,11 +39,8 @@ class GoogleServiceProvider:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                if os.path.exists(client_secret_path):
-                    flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, self.scopes)
-                    self.creds = flow.run_local_server(port=0)
-                else:
-                    raise FileNotFoundError("client_secret.json not found.")
+                flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, self.scopes)
+                self.creds = flow.run_local_server(port=0)
             
             with open(token_path, 'w') as token:
                 token.write(self.creds.to_json())
@@ -61,45 +58,50 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
+    # ▼▼▼ LOGIKA PENCARIAN RIWAYAT DIPERBARUI TOTAL ▼▼▼
     def check_user_submissions(self, email):
         try:
             all_values = self.data_entry_sheet.get_all_values()
             if len(all_values) <= 1:
                 return {"active_codes": {"pending": [], "approved": []}, "rejected_submissions": []}
+
             headers = all_values[0]
             records = [dict(zip(headers, row)) for row in all_values[1:]]
+            
             pending_codes = []
             approved_codes = []
-            user_rejected_submissions = []
+            rejected_submissions = []
+            
             processed_locations = set()
+            
+            # Iterasi dari baru ke lama untuk menentukan status final setiap kode toko
             for record in reversed(records):
                 lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
-                if not lokasi or lokasi in processed_locations: continue
+                if not lokasi or lokasi in processed_locations:
+                    continue
+                
                 status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
+                
                 if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
                     pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
-                elif str(record.get(config.COLUMN_NAMES.EMAIL_PEMBUAT, "")).strip() == email and \
-                     status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                    user_rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
+                # PERUBAHAN UTAMA: Filter email dihapus agar data revisi bersifat global
+                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                    rejected_submissions.append({key.replace(' ', '_'): val for key, val in record.items()})
+
+                # Tandai lokasi ini sudah diproses agar tidak diambil lagi status lamanya
                 processed_locations.add(lokasi)
-            return {"active_codes": {"pending": pending_codes, "approved": approved_codes}, "rejected_submissions": user_rejected_submissions}
+
+            return {
+                "active_codes": {
+                    "pending": pending_codes,
+                    "approved": approved_codes
+                },
+                "rejected_submissions": rejected_submissions
+            }
         except Exception as e:
             raise e
-
-    def get_user_details(self, email):
-        """Mengambil detail pengguna dari Sheet1 berdasarkan email."""
-        try:
-            user_sheet = self.sheet.worksheet("Sheet1") 
-            for record in user_sheet.get_all_records():
-                if str(record.get('EMAIL', '')).strip().lower() == str(email).strip().lower():
-                    return {"nama_lengkap": record.get('NAMA LENGKAP', '')}
-        except gspread.exceptions.WorksheetNotFound:
-            print("Error: Worksheet 'Sheet1' not found.")
-        except Exception as e:
-            print(f"An error occurred in get_user_details: {e}")
-        return None
 
     def get_sheet_headers(self, worksheet_name):
         return self.sheet.worksheet(worksheet_name).row_values(1)
