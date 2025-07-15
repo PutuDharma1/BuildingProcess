@@ -14,8 +14,9 @@ load_dotenv()
 app = Flask(__name__)
 
 # Konfigurasi CORS untuk secara eksplisit mengizinkan frontend Vercel Anda
+# PERUBAHAN DI BAWAH INI: r"/api/*" diubah menjadi r"/*" untuk mencakup semua rute
 cors = CORS(app, resources={
-  r"/api/*": { # Hanya izinkan akses ke endpoint API
+  r"/*": { 
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
@@ -201,4 +202,5 @@ def handle_approval():
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {e}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=True)
