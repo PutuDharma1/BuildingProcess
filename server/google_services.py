@@ -38,12 +38,12 @@ class GoogleServiceProvider:
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
+                # Simpan token yang sudah diperbarui
+                with open(token_path, 'w') as token:
+                    token.write(self.creds.to_json())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(client_secret_path, self.scopes)
-                self.creds = flow.run_local_server(port=0)
-            
-            with open(token_path, 'w') as token:
-                token.write(self.creds.to_json())
+                # Jika token.json tidak ada atau tidak valid, hentikan aplikasi dengan error yang jelas
+                raise Exception("CRITICAL: token.json not found or invalid. Please re-authenticate locally and upload the token file.")
 
         self.gspread_client = gspread.authorize(self.creds)
         self.sheet = self.gspread_client.open_by_key(config.SPREADSHEET_ID)
