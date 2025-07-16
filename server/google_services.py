@@ -37,12 +37,11 @@ class GoogleServiceProvider:
         
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
+                # Cukup perbarui token di dalam memori.
+                # Jangan coba menulisnya kembali ke file.
                 self.creds.refresh(Request())
-                # Simpan token yang sudah diperbarui
-                with open(token_path, 'w') as token:
-                    token.write(self.creds.to_json())
             else:
-                # Jika token.json tidak ada atau tidak valid, hentikan aplikasi dengan error yang jelas
+                # Jika token.json tidak ada atau tidak valid, hentikan aplikasi.
                 raise Exception("CRITICAL: token.json not found or invalid. Please re-authenticate locally and upload the token file.")
 
         self.gspread_client = gspread.authorize(self.creds)
