@@ -37,11 +37,8 @@ class GoogleServiceProvider:
         
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
-                # Cukup perbarui token di dalam memori.
-                # Jangan coba menulisnya kembali ke file.
                 self.creds.refresh(Request())
             else:
-                # Jika token.json tidak ada atau tidak valid, hentikan aplikasi.
                 raise Exception("CRITICAL: token.json not found or invalid. Please re-authenticate locally and upload the token file.")
 
         self.gspread_client = gspread.authorize(self.creds)
@@ -57,7 +54,6 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
-    # ▼▼▼ LOGIKA PENCARIAN RIWAYAT DIPERBARUI TOTAL ▼▼▼
     def check_user_submissions(self, email):
         try:
             all_values = self.data_entry_sheet.get_all_values()
@@ -73,7 +69,6 @@ class GoogleServiceProvider:
             
             processed_locations = set()
             
-            # Iterasi dari baru ke lama untuk menentukan status final setiap kode toko
             for record in reversed(records):
                 lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
                 if not lokasi or lokasi in processed_locations:
@@ -85,12 +80,10 @@ class GoogleServiceProvider:
                     pending_codes.append(lokasi)
                 elif status == config.STATUS.APPROVED:
                     approved_codes.append(lokasi)
-                # PERUBAHAN UTAMA: Filter email dihapus dan dibuat dictionary baru
                 elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
                     submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
                     rejected_submissions.append(submission_data)
 
-                # Tandai lokasi ini sudah diproses agar tidak diambil lagi status lamanya
                 processed_locations.add(lokasi)
 
             return {
@@ -142,11 +135,32 @@ class GoogleServiceProvider:
             print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
         return None
 
+    def get_emails_by_jabatan(self, branch_name, jabatan):
+        """Mengambil semua email yang cocok dengan cabang dan jabatan."""
+        emails = []
+        try:
+            cabang_sheet = self.sheet.worksheet(config.CABANG_SHEET_NAME)
+            for record in cabang_sheet.get_all_records():
+                sheet_branch = str(record.get('CABANG', '')).strip().lower()
+                input_branch = str(branch_name).strip().lower()
+                sheet_jabatan = str(record.get('JABATAN', '')).strip().upper()
+                input_jabatan = str(jabatan).strip().upper()
+
+                if sheet_branch == input_branch and sheet_jabatan == input_jabatan:
+                    email = record.get('EMAIL_SAT')
+                    if email:
+                        emails.append(email)
+        except gspread.exceptions.WorksheetNotFound:
+            print(f"Error: Worksheet '{config.CABANG_SHEET_NAME}' not found.")
+        return emails
+
     def send_email(self, to, subject, html_body, pdf_attachment_bytes=None, pdf_filename="RAB.pdf", cc=None):
         try:
             message = MIMEMultipart()
-            message['to'] = to; message['subject'] = subject
-            if cc: message['cc'] = ', '.join(cc)
+            message['to'] = to
+            message['subject'] = subject
+            if cc:
+                message['cc'] = ', '.join(cc)
             message.attach(MIMEText(html_body, 'html'))
             if pdf_attachment_bytes:
                 part = MIMEBase('application', 'octet-stream')

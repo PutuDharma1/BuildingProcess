@@ -19,7 +19,7 @@ cors = CORS(app, resources={
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
-      "https://building-process-two.vercel.app" # URL Vercel Anda
+      "https://building-process-two.vercel.app"
     ]
   }
 })
@@ -82,13 +82,13 @@ def submit_form():
         
         cabang = data.get('Cabang')
         if not cabang:
-              raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
+             raise Exception("Field 'Cabang' is empty. Cannot find Coordinator.")
 
         coordinator_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.KOORDINATOR)
         if not coordinator_email:
             raise Exception(f"Coordinator email for branch '{cabang}' not found. Please check the 'Cabang' sheet.")
 
-        base_url = "https://buildingprocess-fld9.onrender.com" # URL Backend Render Anda
+        base_url = "https://buildingprocess-fld9.onrender.com"
         approval_url = f"{base_url}/api/handle_approval?action=approve&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         rejection_url = f"{base_url}/api/handle_approval?action=reject&row={new_row_index}&level=coordinator&approver={coordinator_email}"
         
@@ -172,51 +172,57 @@ def handle_approval():
                 email_html_manager = render_template('email_template.html', level='Manajer', form_data=row_data, approval_url=approval_url_manager, rejection_url=rejection_url_manager, additional_info=f"Telah disetujui oleh Koordinator: {approver}")
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
-                # PERBAIKAN KODE: Menggunakan keyword arguments agar lebih jelas dan aman
-                google_provider.send_email(
-                    to=manager_email, 
-                    subject=f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", 
-                    html_body=email_html_manager, 
-                    pdf_attachment_bytes=pdf_bytes, 
-                    pdf_filename=pdf_filename
-                )
+                google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
             return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
         
         elif level == 'manager' and action == 'approve':
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.APPROVED)
             google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
             google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
+            
             row_data[config.COLUMN_NAMES.STATUS] = config.STATUS.APPROVED
             row_data[config.COLUMN_NAMES.MANAGER_APPROVER] = approver
             row_data[config.COLUMN_NAMES.MANAGER_APPROVAL_TIME] = current_time
+            
             final_pdf_bytes = create_pdf_from_data(google_provider, row_data)
             final_pdf_filename = f"DISETUJUI_RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
             final_pdf_link = google_provider.upload_pdf_to_drive(final_pdf_bytes, final_pdf_filename)
+            
             google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
             row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
             google_provider.copy_to_approved_sheet(row_data)
-            support_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.SUPPORT)
-            manager_email = approver
-            coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
-            if support_email:
-                cc_list = list(filter(None, set([manager_email, coordinator_email])))
+
+            creator_email = row_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
+
+            if creator_email:
+                support_emails = google_provider.get_emails_by_jabatan(cabang, config.JABATAN.SUPPORT)
+                manager_email = approver
+                coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
+
+                cc_list = list(filter(None, set(support_emails + [manager_email, coordinator_email])))
+                
+                if creator_email in cc_list:
+                    cc_list.remove(creator_email)
+                
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
                 email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
-                # PERBAIKAN KODE: Menambahkan argumen 'html_body' yang hilang
+                
                 google_provider.send_email(
-                    to=support_email, 
-                    cc=cc_list, 
-                    subject=subject, 
-                    html_body=email_body_html, 
-                    pdf_attachment_bytes=final_pdf_bytes, 
+                    to=creator_email,
+                    cc=cc_list,
+                    subject=subject,
+                    html_body=email_body_html,
+                    pdf_attachment_bytes=final_pdf_bytes,
                     pdf_filename=final_pdf_filename
                 )
+
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:
         traceback.print_exc()
         error_message = str(e.args[0]) if e.args else "An unknown error occurred in handle_approval."
-        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
+        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {e}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host='0.0.0.0', port=port)
