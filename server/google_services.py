@@ -54,47 +54,45 @@ class GoogleServiceProvider:
         self.drive_service.permissions().create(fileId=file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
         return file.get('webViewLink')
 
+    # PERUBAHAN: Menghapus blok try...except yang tidak perlu dari fungsi ini
     def check_user_submissions(self, email):
-        try:
-            all_values = self.data_entry_sheet.get_all_values()
-            if len(all_values) <= 1:
-                return {"active_codes": {"pending": [], "approved": []}, "rejected_submissions": []}
+        all_values = self.data_entry_sheet.get_all_values()
+        if len(all_values) <= 1:
+            return {"active_codes": {"pending": [], "approved": []}, "rejected_submissions": []}
 
-            headers = all_values[0]
-            records = [dict(zip(headers, row)) for row in all_values[1:]]
+        headers = all_values[0]
+        records = [dict(zip(headers, row)) for row in all_values[1:]]
+        
+        pending_codes = []
+        approved_codes = []
+        rejected_submissions = []
+        
+        processed_locations = set()
+        
+        for record in reversed(records):
+            lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
+            if not lokasi or lokasi in processed_locations:
+                continue
             
-            pending_codes = []
-            approved_codes = []
-            rejected_submissions = []
+            status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
             
-            processed_locations = set()
-            
-            for record in reversed(records):
-                lokasi = str(record.get(config.COLUMN_NAMES.LOKASI, "")).strip().upper()
-                if not lokasi or lokasi in processed_locations:
-                    continue
-                
-                status = str(record.get(config.COLUMN_NAMES.STATUS, "")).strip()
-                
-                if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
-                    pending_codes.append(lokasi)
-                elif status == config.STATUS.APPROVED:
-                    approved_codes.append(lokasi)
-                elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
-                    submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
-                    rejected_submissions.append(submission_data)
+            if status in [config.STATUS.WAITING_FOR_COORDINATOR, config.STATUS.WAITING_FOR_MANAGER]:
+                pending_codes.append(lokasi)
+            elif status == config.STATUS.APPROVED:
+                approved_codes.append(lokasi)
+            elif status in [config.STATUS.REJECTED_BY_COORDINATOR, config.STATUS.REJECTED_BY_MANAGER]:
+                submission_data = {key.replace(' ', '_'): val for key, val in record.items()}
+                rejected_submissions.append(submission_data)
 
-                processed_locations.add(lokasi)
+            processed_locations.add(lokasi)
 
-            return {
-                "active_codes": {
-                    "pending": pending_codes,
-                    "approved": approved_codes
-                },
-                "rejected_submissions": rejected_submissions
-            }
-        except Exception as e:
-            raise e
+        return {
+            "active_codes": {
+                "pending": pending_codes,
+                "approved": approved_codes
+            },
+            "rejected_submissions": rejected_submissions
+        }
 
     def get_sheet_headers(self, worksheet_name):
         return self.sheet.worksheet(worksheet_name).row_values(1)
