@@ -3,22 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      http-equiv="Cache-Control"
-      content="no-cache, no-store, must-revalidate"
-    />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <title>Estimasi Rencana Anggaran Biaya - Alfamart</title>
     <script>
       // Security Check: Redirect to login if not authenticated
-      const isAuthenticated = sessionStorage.getItem("authenticated");
+      const isAuthenticated = sessionStorage.getItem('authenticated');
       if (!isAuthenticated) {
-        // Path disesuaikan karena file ini ada di dalam folder Estimasi_rab
-        window.location.href = "/index.html";
+          // Path disesuaikan karena file ini ada di dalam folder Estimasi_rab
+          window.location.href = '/index.html';       
       }
     </script>
-
+    <!-- KODE MODIFIKASI DITAMBAHKAN DI SINI -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Ambil data cabang pengguna dari session storage
+        const userBranch = sessionStorage.getItem("loggedInUserCabang");
+        // Jika karena suatu hal data cabang tidak ada, hentikan eksekusi skrip
+        if (!userBranch) {
+          console.error(
+            "Data cabang pengguna tidak ditemukan di session storage."
+          );
+          return;
+        }
+        // 2. Temukan elemen dropdown cabang di halaman
+        const branchDropdown = document.getElementById("cabang");
+        if (!branchDropdown) {
+          console.error('Elemen dropdown dengan ID "cabang" tidak ditemukan!');
+          return;
+        }
+        // 3. Definisikan aturan akses khusus
+        const specialAccessRules = {
+          SIDOARJO: ["SIDOARJO", "BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+          MEDAN: ["MEDAN", "ACEH"],
+          PALEMBANG: ["PALEMBANG", "BANGKA", "BELITUNG", "BENGKULU"],
+          LOMBOK: ["LOMBOK", "SUMBAWA"],
+        };
+        // 4. Tentukan cabang yang boleh diakses pengguna
+        const allowedBranches = specialAccessRules[
+          userBranch.toUpperCase()
+        ] || [userBranch];
+        const allowedBranchesUpper = allowedBranches.map((b) =>
+          b.toUpperCase()
+        );
+        // 5. Simpan semua opsi yang ada saat ini
+        const allOptions = Array.from(branchDropdown.options);
+        branchDropdown.innerHTML = ""; // Kosongkan dropdown
+        // 6. Filter dan tambahkan kembali opsi yang diizinkan
+        allOptions.forEach((option) => {
+          // Biarkan opsi pertama ("-- Pilih Cabang --") dan opsi yang diizinkan
+          if (
+            option.value === "" ||
+            allowedBranchesUpper.includes(option.value.toUpperCase())
+          ) {
+            branchDropdown.add(option);
+          }
+        });
+        // 7. Atur nilai default dan status dropdown
+        if (branchDropdown.options.length === 2) {
+          // Jika hanya ada 1 cabang yang diizinkan + opsi "pilih"
+          branchDropdown.selectedIndex = 1; // Otomatis pilih cabang tersebut
+          branchDropdown.disabled = true; // Kunci dropdown
+        } else {
+          // Jika akses > 1, atur cabang utama sebagai default
+          const primaryBranchOption = Array.from(branchDropdown.options).find(
+            (opt) => opt.value.toUpperCase() === userBranch.toUpperCase()
+          );
+          if (primaryBranchOption) {
+            branchDropdown.value = primaryBranchOption.value;
+          }
+        }
+      });
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css" />
     <link
@@ -29,11 +86,7 @@
   <body>
     <header>
       <a href="/Homepage/index.html">
-        <img
-          src="../Assets/Alfamart-Emblem.png"
-          alt="Alfamart Logo"
-          class="header-logo"
-        />
+        <img src="../Assets/Alfamart-Emblem.png" alt="Alfamart Logo" class="header-logo" />
       </a>
       <h1>Form Estimasi Rencana Anggaran Biaya</h1>
     </header>
@@ -57,52 +110,52 @@
         </select>
         <label for="cabang">Cabang:</label>
         <select name="Cabang" id="cabang" required>
-          <option value="">-- Pilih Cabang --</option>
-          <option value="ACEH">ACEH</option>
-          <option value="BALARAJA">BALARAJA</option>
-          <option value="BALI">BALI</option>
-          <option value="BANDUNG 1">BANDUNG 1</option>
-          <option value="BANDUNG 2">BANDUNG 2</option>
-          <option value="BANGKA">BANGKA</option>
-          <option value="BANJARMASIN">BANJARMASIN</option>
-          <option value="BATAM">BATAM</option>
-          <option value="BELITUNG">BELITUNG</option>
-          <option value="BENGKULU">BENGKULU</option>
-          <option value="BOGOR">BOGOR</option>
-          <option value="BPN_SMD">BPN_SMD</option>
-          <option value="CIANJUR">CIANJUR</option>
-          <option value="CIKOKOL">CIKOKOL</option>
-          <option value="CILACAP">CILACAP</option>
-          <option value="CILEUNGSI">CILEUNGSI</option>
-          <option value="GORONTALO">GORONTALO</option>
-          <option value="JAMBI">JAMBI</option>
-          <option value="JEMBER">JEMBER</option>
-          <option value="KARAWANG">KARAWANG</option>
-          <option value="KLATEN">KLATEN</option>
-          <option value="KOTABUMI">KOTABUMI</option>
-          <option value="LAMPUNG">LAMPUNG</option>
-          <option value="LOMBOK">LOMBOK</option>
-          <option value="LUWU">LUWU</option>
-          <option value="MADIUN">MADIUN</option>
-          <option value="MAKASSAR">MAKASSAR</option>
-          <option value="MALANG">MALANG</option>
-          <option value="MANADO">MANADO</option>
-          <option value="MANOKWARI">MANOKWARI</option>
-          <option value="MEDAN">MEDAN</option>
-          <option value="NTT">NTT</option>
-          <option value="PALEMBANG">PALEMBANG</option>
-          <option value="PARUNG">PARUNG</option>
-          <option value="PEKANBARU">PEKANBARU</option>
-          <option value="PLUMBON">PLUMBON</option>
-          <option value="PONTIANAK">PONTIANAK</option>
-          <option value="REMBANG">REMBANG</option>
-          <option value="SEMARANG">SEMARANG</option>
-          <option value="SERANG">SERANG</option>
-          <option value="SIDOARJO">SIDOARJO</option>
-          <option value="SORONG">SORONG</option>
-          <option value="LOMBOK">LOMBOK</option>
-          <option value="TEGAL">TEGAL</option>
-          <option value="HEAD OFFICE">HEAD OFFICE</option>
+            <option value="">-- Pilih Cabang --</option>
+                        <option value="ACEH">ACEH</option>
+                        <option value="BALARAJA">BALARAJA</option>
+                        <option value="BALI">BALI</option>
+                        <option value="BANDUNG 1">BANDUNG 1</option>
+                        <option value="BANDUNG 2">BANDUNG 2</option>
+                        <option value="BANGKA">BANGKA</option>
+                        <option value="BANJARMASIN">BANJARMASIN</option>
+                        <option value="BATAM">BATAM</option>
+                        <option value="BELITUNG">BELITUNG</option>
+                        <option value="BENGKULU">BENGKULU</option>
+                        <option value="BOGOR">BOGOR</option>
+                        <option value="CIANJUR">CIANJUR</option>
+                        <option value="CIKOKOL">CIKOKOL</option>
+                        <option value="CILACAP">CILACAP</option>
+                        <option value="CILEUNGSI">CILEUNGSI</option>
+                        <option value="GORONTALO">GORONTALO</option>
+                        <option value="JAMBI">JAMBI</option>
+                        <option value="JEMBER">JEMBER</option>
+                        <option value="KARAWANG">KARAWANG</option>
+                        <option value="KLATEN">KLATEN</option>
+                        <option value="KOTABUMI">KOTABUMI</option>
+                        <option value="LAMPUNG">LAMPUNG</option>
+                        <option value="LOMBOK">LOMBOK</option>
+                        <option value="LUWU">LUWU</option>
+                        <option value="MADIUN">MADIUN</option>
+                        <option value="MAKASSAR">MAKASSAR</option>
+                        <option value="MALANG">MALANG</option>
+                        <option value="MANADO">MANADO</option>
+                        <option value="MANOKWARI">MANOKWARI</option>
+                        <option value="MEDAN">MEDAN</option>
+                        <option value="NTT">NTT</option>
+                        <option value="PALEMBANG">PALEMBANG</option>
+                        <option value="PARUNG">PARUNG</option>
+                        <option value="PEKANBARU">PEKANBARU</option>
+                        <option value="PLUMBON">PLUMBON</option>
+                        <option value="PONTIANAK">PONTIANAK</option>
+                        <option value="REMBANG">REMBANG</option>
+                        <option value="SEMARANG">SEMARANG</option>
+                        <option value="SERANG">SERANG</option>
+                        <option value="SIDOARJO">SIDOARJO</option>
+                        <option value="SIDOARJO BPN_SMD">SIDOARJO BPN_SMD</option>
+                        <option value="SORONG">SORONG</option>
+                        <option value="SUMBAWA">SUMBAWA</option>
+                        <option value="TEGAL">TEGAL</option>
+                        <option value="HEAD OFFICE">HEAD OFFICE</option>
         </select>
         <label for="lingkup_pekerjaan">Lingkup Pekerjaan:</label>
         <select name="Lingkup Pekerjaan" id="lingkup_pekerjaan" required>
@@ -172,9 +225,7 @@
         />
         <div class="all-tables-container">
           <div id="sipil-tables-wrapper" class="hidden">
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN PERSIAPAN
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PERSIAPAN</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -204,10 +255,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -261,10 +309,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -286,9 +331,7 @@
             >
               Tambah Item Pekerjaan Bobokan / Bongkaran
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN TANAH
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN TANAH</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -318,10 +361,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -375,10 +415,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -400,9 +437,7 @@
             >
               Tambah Item Pekerjaan Pondasi & Beton
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN PASANGAN
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PASANGAN</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -432,10 +467,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -457,9 +489,7 @@
             >
               Tambah Item Pekerjaan Pasangan
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN BESI
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN BESI</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -489,10 +519,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -514,9 +541,7 @@
             >
               Tambah Item Pekerjaan Besi
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN KERAMIK
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN KERAMIK</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -546,10 +571,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -571,9 +593,7 @@
             >
               Tambah Item Pekerjaan Keramik
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN PLUMBING
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PLUMBING</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -603,10 +623,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -660,10 +677,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -685,9 +699,7 @@
             >
               Tambah Item Pekerjaan Sanitary & Acecories
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN ATAP
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN ATAP</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -717,10 +729,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -774,10 +783,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -799,9 +805,7 @@
             >
               Tambah Item Pekerjaan Kusen, Pintu & Kaca
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              PEKERJAAN FINISHING
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN FINISHING</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -831,10 +835,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -888,10 +889,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -915,9 +913,7 @@
             </button>
           </div>
           <div id="me-tables-wrapper" class="hidden">
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              INSTALASI
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">INSTALASI</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -947,10 +943,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -972,9 +965,7 @@
             >
               Tambah Item Pekerjaan Instalasi
             </button>
-            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
-              FIXTURE
-            </h2>
+            <h2 class="text-lg font-semibold mt-6 mb-2 section-title">FIXTURE</h2>
             <div class="table-container">
               <table>
                 <thead>
@@ -1004,10 +995,7 @@
                 ></tbody>
                 <tfoot>
                   <tr>
-                    <td
-                      colspan="8"
-                      style="text-align: right; font-weight: bold"
-                    >
+                    <td colspan="8" style="text-align: right; font-weight: bold">
                       Sub Total:
                     </td>
                     <td
@@ -1031,7 +1019,6 @@
             </button>
           </div>
         </div>
-
         <div class="mt-6 p-4 grand-total-box">
           <span class="text-lg font-bold">Grand Total Estimasi Biaya:</span>
           <span id="grand-total-amount" class="text-xl font-extrabold ml-4"
@@ -1047,73 +1034,5 @@
     </div>
     <div id="message" role="status" aria-live="polite"></div>
     <script src="script.js"></script>
-
-    <!-- KODE MODIFIKASI DITAMBAHKAN DI SINI -->
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // 1. Ambil data cabang pengguna dari session storage
-        const userBranch = sessionStorage.getItem("loggedInUserCabang");
-        // Jika karena suatu hal data cabang tidak ada, hentikan eksekusi skrip
-        if (!userBranch) {
-          console.error(
-            "Data cabang pengguna tidak ditemukan di session storage."
-          );
-          return;
-        }
-
-        // 2. Temukan elemen dropdown cabang di halaman
-        const branchDropdown = document.getElementById("cabang");
-        if (!branchDropdown) {
-          console.error('Elemen dropdown dengan ID "cabang" tidak ditemukan!');
-          return;
-        }
-
-        // 3. Definisikan aturan akses khusus
-        const specialAccessRules = {
-          SIDOARJO: ["SIDOARJO", "BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
-          MEDAN: ["MEDAN", "ACEH"],
-          PALEMBANG: ["PALEMBANG", "BANGKA", "BELITUNG", "BENGKULU"],
-          LOMBOK: ["LOMBOK", "SUMBAWA"],
-        };
-
-        // 4. Tentukan cabang yang boleh diakses pengguna
-        const allowedBranches = specialAccessRules[
-          userBranch.toUpperCase()
-        ] || [userBranch];
-        const allowedBranchesUpper = allowedBranches.map((b) =>
-          b.toUpperCase()
-        );
-
-        // 5. Simpan semua opsi yang ada saat ini
-        const allOptions = Array.from(branchDropdown.options);
-        branchDropdown.innerHTML = ""; // Kosongkan dropdown
-
-        // 6. Filter dan tambahkan kembali opsi yang diizinkan
-        allOptions.forEach((option) => {
-          // Biarkan opsi pertama ("-- Pilih Cabang --") dan opsi yang diizinkan
-          if (
-            option.value === "" ||
-            allowedBranchesUpper.includes(option.value.toUpperCase())
-          ) {
-            branchDropdown.add(option);
-          }
-        });
-
-        // 7. Atur nilai default dan status dropdown
-        if (branchDropdown.options.length === 2) {
-          // Jika hanya ada 1 cabang yang diizinkan + opsi "pilih"
-          branchDropdown.selectedIndex = 1; // Otomatis pilih cabang tersebut
-          branchDropdown.disabled = true; // Kunci dropdown
-        } else {
-          // Jika akses > 1, atur cabang utama sebagai default
-          const primaryBranchOption = Array.from(branchDropdown.options).find(
-            (opt) => opt.value.toUpperCase() === userBranch.toUpperCase()
-          );
-          if (primaryBranchOption) {
-            branchDropdown.value = primaryBranchOption.value;
-          }
-        }
-      });
-    </script>
   </body>
 </html>
