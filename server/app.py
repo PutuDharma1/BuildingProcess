@@ -4,6 +4,7 @@ import traceback
 from flask import Flask, request, jsonify, render_template, url_for
 from dotenv import load_dotenv
 from flask_cors import CORS
+from datetime import timezone, timedelta # Import modul yang diperlukan
 
 import config
 from google_services import GoogleServiceProvider
@@ -15,7 +16,7 @@ app = Flask(__name__)
 
 # Konfigurasi CORS untuk secara eksplisit mengizinkan frontend Vercel Anda
 cors = CORS(app, resources={
-  r"/*": { 
+  r"/*": {
     "origins": [
       "http://127.0.0.1:5500",
       "http://localhost:5500",
@@ -30,20 +31,6 @@ google_provider = GoogleServiceProvider()
 def index():
     """Endpoint utama untuk Health Check di Render."""
     return "Backend server is running and healthy.", 200
-
-@app.route('/api/user_info', methods=['GET'])
-def get_user_info():
-    """Endpoint untuk mengambil detail pengguna berdasarkan email."""
-    email = request.args.get('email')
-    if not email:
-        return jsonify({"error": "Email parameter is missing"}), 400
-    
-    user_details = google_provider.get_user_details(email)
-    
-    if user_details:
-        return jsonify(user_details), 200
-    else:
-        return jsonify({"error": "User not found"}), 404
 
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
@@ -67,8 +54,9 @@ def submit_form():
         return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
     new_row_index = None
     try:
+        WIB = timezone(timedelta(hours=7))
         data[config.COLUMN_NAMES.STATUS] = config.STATUS.WAITING_FOR_COORDINATOR
-        data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now().isoformat()
+        data[config.COLUMN_NAMES.TIMESTAMP] = datetime.datetime.now(WIB).isoformat()
         
         jenis_toko = data.get('Proyek', 'N/A')
         kode_toko = data.get('Lokasi', 'N/A')
@@ -105,6 +93,7 @@ def submit_form():
         error_message = str(e.args[0]) if e.args else "An unknown error occurred during form submission."
         return jsonify({"status": "error", "message": error_message}), 500
 
+
 @app.route('/api/handle_approval', methods=['GET'])
 def handle_approval():
     """Endpoint untuk menangani aksi persetujuan atau penolakan dari email."""
@@ -131,7 +120,9 @@ def handle_approval():
             msg = f'This action has already been processed. Current status: <strong>{current_status}</strong>.'
             return render_template('response_page.html', title='Action Already Processed', message=msg, theme_color='#ffc107', icon='ⓘ', logo_url=logo_url)
         
-        current_time = datetime.datetime.now().isoformat()
+        WIB = timezone(timedelta(hours=7))
+        current_time = datetime.datetime.now(WIB).isoformat()
+        
         cabang = row_data.get(config.COLUMN_NAMES.CABANG)
         jenis_toko = row_data.get(config.COLUMN_NAMES.PROYEK, 'N/A')
         kode_toko = row_data.get(config.COLUMN_NAMES.LOKASI, 'N/A')
@@ -139,31 +130,28 @@ def handle_approval():
 
         if action == 'reject':
             new_status = ""
-            rejected_by_level = ""
             if level == 'coordinator':
                 new_status = config.STATUS.REJECTED_BY_COORDINATOR
-                rejected_by_level = "Koordinator"
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
             elif level == 'manager':
                 new_status = config.STATUS.REJECTED_BY_MANAGER
-                rejected_by_level = "Manajer"
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVER, approver)
                 google_provider.update_cell(row, config.COLUMN_NAMES.MANAGER_APPROVAL_TIME, current_time)
             
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, new_status)
             if creator_email:
                 subject = f"[DITOLAK] Pengajuan RAB Proyek: {jenis_toko}"
-                body = f"<p>Yth. Bapak/Ibu,</p><p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b> oleh {rejected_by_level} ({approver}).</p><p>Silakan buka kembali form, masukkan kode toko yang sama untuk memuat ulang data terakhir, lakukan revisi, dan kirim ulang jika diperlukan.</p>"
+                body = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b>.</p>"
                 google_provider.send_email(to=creator_email, subject=subject, html_body=body)
             return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
 
         elif level == 'coordinator' and action == 'approve':
-            google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
-            google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
-            google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
-            manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.MANAGER)
-            if manager_email:
+             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
+             google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVER, approver)
+             google_provider.update_cell(row, config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME, current_time)
+             manager_email = google_provider.get_email_by_jabatan(cabang, config.JABATAN.MANAGER)
+             if manager_email:
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVER] = approver
                 row_data[config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME] = current_time
                 base_url = "https://buildingprocess-fld9.onrender.com"
@@ -173,7 +161,7 @@ def handle_approval():
                 pdf_bytes = create_pdf_from_data(google_provider, row_data)
                 pdf_filename = f"RAB_ALFAMART({jenis_toko})_({kode_toko}).pdf"
                 google_provider.send_email(manager_email, f"[TAHAP 2: PERLU PERSETUJUAN] RAB Proyek: {jenis_toko}", email_html_manager, pdf_bytes, pdf_filename)
-            return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
+             return render_template('response_page.html', title='Persetujuan Diteruskan', message='Terima kasih. Persetujuan Anda telah dicatat.', theme_color='#28a745', icon='✔', logo_url=logo_url)
         
         elif level == 'manager' and action == 'approve':
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.APPROVED)
@@ -192,36 +180,22 @@ def handle_approval():
             row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
             google_provider.copy_to_approved_sheet(row_data)
 
-            creator_email = row_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
-
             if creator_email:
                 support_emails = google_provider.get_emails_by_jabatan(cabang, config.JABATAN.SUPPORT)
                 manager_email = approver
                 coordinator_email = row_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER)
-
                 cc_list = list(filter(None, set(support_emails + [manager_email, coordinator_email])))
-                
                 if creator_email in cc_list:
                     cc_list.remove(creator_email)
-                
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
                 email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
-                
-                google_provider.send_email(
-                    to=creator_email,
-                    cc=cc_list,
-                    subject=subject,
-                    html_body=email_body_html,
-                    pdf_attachment_bytes=final_pdf_bytes,
-                    pdf_filename=final_pdf_filename
-                )
-
+                google_provider.send_email(to=creator_email, cc=cc_list, subject=subject, html_body=email_body_html, pdf_attachment_bytes=final_pdf_bytes, pdf_filename=final_pdf_filename)
             return render_template('response_page.html', title='Persetujuan Berhasil', message='Tindakan Anda telah berhasil diproses.', theme_color='#28a745', icon='✔', logo_url=logo_url)
 
     except Exception as e:
         traceback.print_exc()
         error_message = str(e.args[0]) if e.args else "An unknown error occurred in handle_approval."
-        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {e}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
+        return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))
