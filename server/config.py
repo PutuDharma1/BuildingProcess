@@ -5,7 +5,7 @@ load_dotenv()
 
 # --- Google & Spreadsheet Configuration ---
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID", "1LA1TlhgltT2bqSN3H-LYasq9PtInVlqq98VPru8txoo")
-PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV"
+PDF_STORAGE_FOLDER_ID = "1fyIieJwLm4ZFoKZ0J5fOChp6gIC3NmrV" # Ganti dengan ID Folder Google Drive Anda
 
 # Nama-nama sheet
 DATA_ENTRY_SHEET_NAME = "Form2"
@@ -20,13 +20,11 @@ class COLUMN_NAMES:
     LOKASI = "Lokasi"
     PROYEK = "Proyek"
     CABANG = "Cabang"
-    LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan" 
+    LINGKUP_PEKERJAAN = "Lingkup_Pekerjaan"
     LUAS_BANGUNAN = "Luas Bangunan"
     LUAS_TERBANGUNAN = "Luas Terbangunan"
-    # ▼▼▼ DIPERBARUI DI SINI ▼▼▼
     LUAS_AREA_TERBUKA = "Luas Area Terbuka"
     LUAS_AREA_PARKIR = "Luas Area Parkir"
-    # ==========================
     LUAS_AREA_SALES = "Luas Area Sales"
     LUAS_GUDANG = "Luas Gudang"
     KOORDINATOR_APPROVER = "Persetujuan Koordinator"

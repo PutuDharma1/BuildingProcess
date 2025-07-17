@@ -1,17 +1,18 @@
-## file: server/pdf_generator.py (Lengkap & Final)
-
 import os
+import locale
 from weasyprint import HTML
 from flask import render_template
 from datetime import datetime
 import config
 
-def format_rupiah(number):
+# Coba atur locale ke Bahasa Indonesia agar nama bulan menjadi Bahasa Indonesia
+try:
+    locale.setlocale(locale.LC_TIME, 'id_ID.UTF-8')
+except locale.Error:
     try:
-        num = float(number)
-        return f"{num:,.0f}".replace(",", ".")
-    except (ValueError, TypeError):
-        return "0"
+        locale.setlocale(locale.LC_TIME, 'Indonesian_Indonesia.1252')
+    except locale.Error:
+        print("Peringatan: Locale Bahasa Indonesia tidak ditemukan. Nama bulan akan dalam Bahasa Inggris.")
 
 def get_nama_lengkap_by_email(google_provider, email):
     if not email: return ""
@@ -25,13 +26,48 @@ def get_nama_lengkap_by_email(google_provider, email):
         print(f"Error getting name for email {email}: {e}")
     return ""
 
+def format_rupiah(number):
+    try:
+        num = float(number)
+        return f"{num:,.0f}".replace(",", ".")
+    except (ValueError, TypeError):
+        return "0"
+
+def parse_flexible_timestamp(ts_string):
+    """Membaca berbagai format timestamp dan mengembalikannya sebagai objek datetime."""
+    if not ts_string or not isinstance(ts_string, str):
+        return None
+
+    # 1. Coba format ISO (standar baru yang kita tulis)
+    try:
+        return datetime.fromisoformat(ts_string)
+    except (ValueError, TypeError):
+        pass
+
+    # 2. Coba format umum dari Google Sheets atau database
+    possible_formats = [
+        '%m/%d/%Y %H:%M:%S',  # Format Google Sheets (US)
+        '%Y-%m-%d %H:%M:%S',  # Format umum database
+    ]
+    for fmt in possible_formats:
+        try:
+            return datetime.strptime(ts_string, fmt)
+        except (ValueError, TypeError):
+            continue
+    
+    return None # Kembalikan None jika semua format gagal
+
 def create_approval_details_block(google_provider, approver_email, approval_time_str):
     approver_name = get_nama_lengkap_by_email(google_provider, approver_email)
-    try:
-        approval_dt = datetime.fromisoformat(approval_time_str)
-        formatted_time = approval_dt.strftime('%d %B %Y, %H:%M')
-    except (ValueError, TypeError):
+    
+    approval_dt = parse_flexible_timestamp(approval_time_str)
+
+    if approval_dt:
+        # Format waktu dengan "WIB" untuk kejelasan
+        formatted_time = approval_dt.strftime('%d %B %Y, %H:%M WIB')
+    else:
         formatted_time = "Waktu tidak tersedia"
+        
     name_display = f"<strong>{approver_name}</strong><br>" if approver_name else ""
     return f"""
     <div class="approval-details">
@@ -74,22 +110,13 @@ def create_pdf_from_data(google_provider, form_data):
             form_data.get(config.COLUMN_NAMES.MANAGER_APPROVAL_TIME)
         )
     
-    # ▼▼▼ LOGIKA BARU UNTUK MEMFORMAT TANGGAL PENGAJUAN ▼▼▼
     tanggal_pengajuan_str = ''
     timestamp_from_data = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
-    if timestamp_from_data:
-        try:
-            # Coba format ISO (saat pertama kali submit dari Python)
-            dt_object = datetime.fromisoformat(timestamp_from_data)
-            tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
-        except (ValueError, TypeError):
-            # Jika gagal, coba format umum dari Google Sheets (misal: '7/3/2025 14:45:10')
-            try:
-                dt_object = datetime.strptime(timestamp_from_data, '%m/%d/%Y %H:%M:%S')
-                tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
-            except (ValueError, TypeError):
-                # Jika masih gagal, tampilkan apa adanya (bagian tanggalnya saja)
-                tanggal_pengajuan_str = str(timestamp_from_data).split(" ")[0]
+    dt_object = parse_flexible_timestamp(timestamp_from_data)
+    if dt_object:
+        tanggal_pengajuan_str = dt_object.strftime('%d %B %Y')
+    else:
+        tanggal_pengajuan_str = str(timestamp_from_data).split(" ")[0] if timestamp_from_data else ''
             
     logo_path = 'file:///' + os.path.abspath(os.path.join('static', 'Alfamart-Emblem.png'))
 
@@ -101,7 +128,7 @@ def create_pdf_from_data(google_provider, form_data):
         coordinator_approval_details=coordinator_approval_details,
         manager_approval_details=manager_approval_details,
         format_rupiah=format_rupiah,
-        tanggal_pengajuan=tanggal_pengajuan_str # Kirim tanggal yang sudah diformat
+        tanggal_pengajuan=tanggal_pengajuan_str
     )
     
     return HTML(string=html_string).write_pdf()
