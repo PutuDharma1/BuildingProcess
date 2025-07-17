@@ -38,16 +38,14 @@ def parse_flexible_timestamp(ts_string):
     if not ts_string or not isinstance(ts_string, str):
         return None
 
-    # 1. Coba format ISO (standar baru yang kita tulis)
     try:
         return datetime.fromisoformat(ts_string)
     except (ValueError, TypeError):
         pass
 
-    # 2. Coba format umum dari Google Sheets atau database
     possible_formats = [
-        '%m/%d/%Y %H:%M:%S',  # Format Google Sheets (US)
-        '%Y-%m-%d %H:%M:%S',  # Format umum database
+        '%m/%d/%Y %H:%M:%S',
+        '%Y-%m-%d %H:%M:%S',
     ]
     for fmt in possible_formats:
         try:
@@ -55,7 +53,7 @@ def parse_flexible_timestamp(ts_string):
         except (ValueError, TypeError):
             continue
     
-    return None # Kembalikan None jika semua format gagal
+    return None
 
 def create_approval_details_block(google_provider, approver_email, approval_time_str):
     approver_name = get_nama_lengkap_by_email(google_provider, approver_email)
@@ -63,7 +61,6 @@ def create_approval_details_block(google_provider, approver_email, approval_time
     approval_dt = parse_flexible_timestamp(approval_time_str)
 
     if approval_dt:
-        # Format waktu dengan "WIB" untuk kejelasan
         formatted_time = approval_dt.strftime('%d %B %Y, %H:%M WIB')
     else:
         formatted_time = "Waktu tidak tersedia"
@@ -97,18 +94,36 @@ def create_pdf_from_data(google_provider, form_data):
     ppn = grand_total * 0.11
     final_grand_total = grand_total + ppn
 
+    # --- AWAL PERUBAHAN ---
+    
+    # 1. Buat detail untuk Pembuat (Creator)
+    creator_details = ""
+    creator_email = form_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
+    creator_timestamp = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
+    if creator_email and creator_timestamp:
+        creator_details = create_approval_details_block(
+            google_provider,
+            creator_email,
+            creator_timestamp
+        )
+
+    # 2. Buat detail untuk Koordinator
     coordinator_approval_details = ""
-    manager_approval_details = ""
     if form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER):
         coordinator_approval_details = create_approval_details_block(
             google_provider, form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER),
             form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME)
         )
+
+    # 3. Buat detail untuk Manajer
+    manager_approval_details = ""
     if form_data.get(config.COLUMN_NAMES.MANAGER_APPROVER):
         manager_approval_details = create_approval_details_block(
             google_provider, form_data.get(config.COLUMN_NAMES.MANAGER_APPROVER),
             form_data.get(config.COLUMN_NAMES.MANAGER_APPROVAL_TIME)
         )
+    
+    # --- AKHIR PERUBAHAN ---
     
     tanggal_pengajuan_str = ''
     timestamp_from_data = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
@@ -121,10 +136,16 @@ def create_pdf_from_data(google_provider, form_data):
     logo_path = 'file:///' + os.path.abspath(os.path.join('static', 'Alfamart-Emblem.png'))
 
     html_string = render_template(
-        'pdf_report.html', data=form_data, grouped_items=grouped_items,
-        grand_total=format_rupiah(grand_total), ppn=format_rupiah(ppn),
-        final_grand_total=format_rupiah(final_grand_total), logo_path=logo_path,
+        'pdf_report.html', 
+        data=form_data, 
+        grouped_items=grouped_items,
+        grand_total=format_rupiah(grand_total), 
+        ppn=format_rupiah(ppn),
+        final_grand_total=format_rupiah(final_grand_total), 
+        logo_path=logo_path,
         JABATAN=config.JABATAN,
+        # Teruskan variabel baru ke template
+        creator_details=creator_details,
         coordinator_approval_details=coordinator_approval_details,
         manager_approval_details=manager_approval_details,
         format_rupiah=format_rupiah,

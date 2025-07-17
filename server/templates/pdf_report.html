@@ -137,10 +137,12 @@
             </tbody>
         </table>
         <div style="clear: both;"></div>
+
         <div class="signatures">
             <div class="signature-box">
                 <p class="title">Dibuat</p>
                 <div class="signature-content">
+                    {{ creator_details | safe }}
                     <div class="signature-line"></div>
                 </div>
                 <p class="jabatan">{{ JABATAN.SUPPORT }}</p>
