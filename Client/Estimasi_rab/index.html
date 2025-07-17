@@ -12,10 +12,70 @@
       const isAuthenticated = sessionStorage.getItem('authenticated');
       if (!isAuthenticated) {
           // Path disesuaikan karena file ini ada di dalam folder Estimasi_rab
-          window.location.href = '/index.html'; 
+          window.location.href = '/index.html';       
       }
     </script>
-    
+    <!-- KODE MODIFIKASI DITAMBAHKAN DI SINI -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. Ambil data cabang pengguna dari session storage
+        const userBranch = sessionStorage.getItem("loggedInUserCabang");
+        // Jika karena suatu hal data cabang tidak ada, hentikan eksekusi skrip
+        if (!userBranch) {
+          console.error(
+            "Data cabang pengguna tidak ditemukan di session storage."
+          );
+          return;
+        }
+        // 2. Temukan elemen dropdown cabang di halaman
+        const branchDropdown = document.getElementById("cabang");
+        if (!branchDropdown) {
+          console.error('Elemen dropdown dengan ID "cabang" tidak ditemukan!');
+          return;
+        }
+        // 3. Definisikan aturan akses khusus
+        const specialAccessRules = {
+          SIDOARJO: ["SIDOARJO", "BPN_SMD", "MANOKWARI", "NTT", "SORONG"],
+          MEDAN: ["MEDAN", "ACEH"],
+          PALEMBANG: ["PALEMBANG", "BANGKA", "BELITUNG", "BENGKULU"],
+          LOMBOK: ["LOMBOK", "SUMBAWA"],
+        };
+        // 4. Tentukan cabang yang boleh diakses pengguna
+        const allowedBranches = specialAccessRules[
+          userBranch.toUpperCase()
+        ] || [userBranch];
+        const allowedBranchesUpper = allowedBranches.map((b) =>
+          b.toUpperCase()
+        );
+        // 5. Simpan semua opsi yang ada saat ini
+        const allOptions = Array.from(branchDropdown.options);
+        branchDropdown.innerHTML = ""; // Kosongkan dropdown
+        // 6. Filter dan tambahkan kembali opsi yang diizinkan
+        allOptions.forEach((option) => {
+          // Biarkan opsi pertama ("-- Pilih Cabang --") dan opsi yang diizinkan
+          if (
+            option.value === "" ||
+            allowedBranchesUpper.includes(option.value.toUpperCase())
+          ) {
+            branchDropdown.add(option);
+          }
+        });
+        // 7. Atur nilai default dan status dropdown
+        if (branchDropdown.options.length === 2) {
+          // Jika hanya ada 1 cabang yang diizinkan + opsi "pilih"
+          branchDropdown.selectedIndex = 1; // Otomatis pilih cabang tersebut
+          branchDropdown.disabled = true; // Kunci dropdown
+        } else {
+          // Jika akses > 1, atur cabang utama sebagai default
+          const primaryBranchOption = Array.from(branchDropdown.options).find(
+            (opt) => opt.value.toUpperCase() === userBranch.toUpperCase()
+          );
+          if (primaryBranchOption) {
+            branchDropdown.value = primaryBranchOption.value;
+          }
+        }
+      });
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css" />
     <link
@@ -30,7 +90,6 @@
       </a>
       <h1>Form Estimasi Rencana Anggaran Biaya</h1>
     </header>
-
     <div class="container">
       <form id="form" class="form-container">
         <label for="lokasi">Lokasi:</label>
@@ -49,7 +108,6 @@
           <option value="Alfamart Reguler">Reguler</option>
           <option value="Franchise">Franchise</option>
         </select>
-
         <label for="cabang">Cabang:</label>
         <select name="Cabang" id="cabang" required>
             <option value="">-- Pilih Cabang --</option>
@@ -99,14 +157,12 @@
                         <option value="TEGAL">TEGAL</option>
                         <option value="HEAD OFFICE">HEAD OFFICE</option>
         </select>
-
         <label for="lingkup_pekerjaan">Lingkup Pekerjaan:</label>
         <select name="Lingkup Pekerjaan" id="lingkup_pekerjaan" required>
           <option value="">-- Pilih Lingkup Pekerjaan --</option>
           <option value="Sipil">Sipil</option>
           <option value="ME">ME</option>
         </select>
-
         <label for="luas_bangunan">Luas Bangunan (m²):</label>
         <input
           type="text"
@@ -117,7 +173,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <label for="luas_terbangunan">Luas Terbangunan (m²):</label>
         <input
           type="text"
@@ -128,7 +183,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <label for="luas_area_terbuka">Luas Area Terbuka (m²):</label>
         <input
           type="text"
@@ -139,7 +193,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <label for="luas_area_parkir">Luas Area Parkir (m²):</label>
         <input
           type="text"
@@ -150,7 +203,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <label for="luas_area_sales">Luas Area Sales (m²):</label>
         <input
           type="text"
@@ -161,7 +213,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <label for="luas_gudang">Luas Gudang (m²):</label>
         <input
           type="text"
@@ -172,7 +223,6 @@
           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1').replace(/(\.\d{2})\d+/, '$1')"
           required
         />
-
         <div class="all-tables-container">
           <div id="sipil-tables-wrapper" class="hidden">
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PERSIAPAN</h2>
@@ -227,7 +277,6 @@
             >
               Tambah Item Pekerjaan Persiapan
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
               PEKERJAAN BOBOKAN / BONGKARAN
             </h2>
@@ -282,7 +331,6 @@
             >
               Tambah Item Pekerjaan Bobokan / Bongkaran
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN TANAH</h2>
             <div class="table-container">
               <table>
@@ -335,7 +383,6 @@
             >
               Tambah Item Pekerjaan Tanah
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
               PEKERJAAN PONDASI & BETON
             </h2>
@@ -390,7 +437,6 @@
             >
               Tambah Item Pekerjaan Pondasi & Beton
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PASANGAN</h2>
             <div class="table-container">
               <table>
@@ -443,7 +489,6 @@
             >
               Tambah Item Pekerjaan Pasangan
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN BESI</h2>
             <div class="table-container">
               <table>
@@ -496,7 +541,6 @@
             >
               Tambah Item Pekerjaan Besi
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN KERAMIK</h2>
             <div class="table-container">
               <table>
@@ -549,7 +593,6 @@
             >
               Tambah Item Pekerjaan Keramik
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN PLUMBING</h2>
             <div class="table-container">
               <table>
@@ -602,7 +645,6 @@
             >
               Tambah Item Pekerjaan Plumbing
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
               PEKERJAAN SANITARY & ACECORIES
             </h2>
@@ -657,7 +699,6 @@
             >
               Tambah Item Pekerjaan Sanitary & Acecories
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN ATAP</h2>
             <div class="table-container">
               <table>
@@ -710,7 +751,6 @@
             >
               Tambah Item Pekerjaan Atap
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
               PEKERJAAN KUSEN, PINTU & KACA
             </h2>
@@ -765,7 +805,6 @@
             >
               Tambah Item Pekerjaan Kusen, Pintu & Kaca
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">PEKERJAAN FINISHING</h2>
             <div class="table-container">
               <table>
@@ -818,7 +857,6 @@
             >
               Tambah Item Pekerjaan Finishing
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">
               PEKERJAAN TAMBAHAN
             </h2>
@@ -874,7 +912,6 @@
               Tambah Item Pekerjaan Tambahan
             </button>
           </div>
-
           <div id="me-tables-wrapper" class="hidden">
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">INSTALASI</h2>
             <div class="table-container">
@@ -928,7 +965,6 @@
             >
               Tambah Item Pekerjaan Instalasi
             </button>
-
             <h2 class="text-lg font-semibold mt-6 mb-2 section-title">FIXTURE</h2>
             <div class="table-container">
               <table>
@@ -983,25 +1019,20 @@
             </button>
           </div>
         </div>
-        
         <div class="mt-6 p-4 grand-total-box">
           <span class="text-lg font-bold">Grand Total Estimasi Biaya:</span>
           <span id="grand-total-amount" class="text-xl font-extrabold ml-4"
             >Rp 0</span
           >
         </div>
-
         <div class="button-group">
           <button type="submit" id="submit-button">Kirim</button>
           <button type="reset">Ulang</button>
         </div>
       </form>
-
       <a href="/Homepage/index.html" class="back-btn">← Kembali ke Beranda</a>
     </div>
-
     <div id="message" role="status" aria-live="polite"></div>
-
     <script src="script.js"></script>
   </body>
 </html>
