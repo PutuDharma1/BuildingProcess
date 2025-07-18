@@ -14,7 +14,7 @@ from pdf_generator import create_pdf_from_data
 load_dotenv()
 app = Flask(__name__)
 
-# Konfigurasi CORS untuk secara eksplisit mengizinkan frontend Vercel Anda
+# Konfigurasi CORS
 cors = CORS(app, resources={
   r"/*": {
     "origins": [
@@ -29,12 +29,10 @@ google_provider = GoogleServiceProvider()
 
 @app.route('/')
 def index():
-    """Endpoint utama untuk Health Check di Render."""
     return "Backend server is running and healthy.", 200
 
 @app.route('/api/check_status', methods=['GET'])
 def check_status():
-    """Endpoint untuk memeriksa status pengajuan pengguna."""
     email = request.args.get('email')
     if not email:
         return jsonify({"error": "Email parameter is missing"}), 400
@@ -43,13 +41,11 @@ def check_status():
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
-        # PERUBAHAN PENTING: Mengubah cara menampilkan error
         error_message = str(e)
         return jsonify({"error": error_message}), 500
 
 @app.route('/api/submit', methods=['POST'])
 def submit_form():
-    """Endpoint untuk menerima dan memproses pengajuan formulir baru."""
     data = request.get_json()
     if not data:
         return jsonify({"status": "error", "message": "Invalid JSON data"}), 400
@@ -91,7 +87,6 @@ def submit_form():
         if new_row_index:
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         traceback.print_exc()
-        # PERUBAHAN PENTING: Mengubah cara menampilkan error
         error_message = str(e)
         return jsonify({"status": "error", "message": error_message}), 500
 
@@ -182,8 +177,6 @@ def handle_approval():
             google_provider.update_cell(row, config.COLUMN_NAMES.LINK_PDF, final_pdf_link)
             row_data[config.COLUMN_NAMES.LINK_PDF] = final_pdf_link
             google_provider.copy_to_approved_sheet(row_data)
-
-            creator_email = row_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
 
             if creator_email:
                 support_emails = google_provider.get_emails_by_jabatan(cabang, config.JABATAN.SUPPORT)
