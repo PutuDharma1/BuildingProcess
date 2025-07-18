@@ -77,7 +77,8 @@ def create_approval_details_block(google_provider, approver_email, approval_time
 def create_pdf_from_data(google_provider, form_data):
     grouped_items = {}
     grand_total = 0
-    for i in range(1, 51):
+    # ▼▼▼ BATAS LOOP SUDAH DIPERBARUI MENJADI 101 (untuk 100 item) ▼▼▼
+    for i in range(1, 101):
         if form_data.get(f"Jenis_Pekerjaan_{i}"):
             kategori = form_data.get(f"Kategori_Pekerjaan_{i}", "Lain-lain")
             if kategori not in grouped_items: grouped_items[kategori] = []
@@ -93,10 +94,7 @@ def create_pdf_from_data(google_provider, form_data):
     
     ppn = grand_total * 0.11
     final_grand_total = grand_total + ppn
-
-    # --- AWAL PERUBAHAN ---
     
-    # 1. Buat detail untuk Pembuat (Creator)
     creator_details = ""
     creator_email = form_data.get(config.COLUMN_NAMES.EMAIL_PEMBUAT)
     creator_timestamp = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
@@ -107,7 +105,6 @@ def create_pdf_from_data(google_provider, form_data):
             creator_timestamp
         )
 
-    # 2. Buat detail untuk Koordinator
     coordinator_approval_details = ""
     if form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVER):
         coordinator_approval_details = create_approval_details_block(
@@ -115,15 +112,12 @@ def create_pdf_from_data(google_provider, form_data):
             form_data.get(config.COLUMN_NAMES.KOORDINATOR_APPROVAL_TIME)
         )
 
-    # 3. Buat detail untuk Manajer
     manager_approval_details = ""
     if form_data.get(config.COLUMN_NAMES.MANAGER_APPROVER):
         manager_approval_details = create_approval_details_block(
             google_provider, form_data.get(config.COLUMN_NAMES.MANAGER_APPROVER),
             form_data.get(config.COLUMN_NAMES.MANAGER_APPROVAL_TIME)
         )
-    
-    # --- AKHIR PERUBAHAN ---
     
     tanggal_pengajuan_str = ''
     timestamp_from_data = form_data.get(config.COLUMN_NAMES.TIMESTAMP)
@@ -144,7 +138,6 @@ def create_pdf_from_data(google_provider, form_data):
         final_grand_total=format_rupiah(final_grand_total), 
         logo_path=logo_path,
         JABATAN=config.JABATAN,
-        # Teruskan variabel baru ke template
         creator_details=creator_details,
         coordinator_approval_details=coordinator_approval_details,
         manager_approval_details=manager_approval_details,

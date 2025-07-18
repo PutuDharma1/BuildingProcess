@@ -211,7 +211,8 @@ const populateFormWithHistory = (data) => {
         }
     }
     setTimeout(() => {
-        for (let i = 1; i <= 50; i++) {
+        // ▼▼▼ PERUBAHAN DI SINI ▼▼▼
+        for (let i = 1; i <= 100; i++) { // Diubah dari 50 menjadi 100
             if (data[`Jenis_Pekerjaan_${i}`]) {
                 const category = data[`Kategori_Pekerjaan_${i}`];
                 const scope = lingkupPekerjaanValue;
@@ -443,5 +444,4 @@ async function initializePage() {
     });
 }
 
-// Inisialisasi halaman saat pertama kali dimuat
 document.addEventListener("DOMContentLoaded", initializePage);
