@@ -41,7 +41,14 @@ def check_status():
         return jsonify(status_data), 200
     except Exception as e:
         traceback.print_exc()
-        error_message = str(e)
+        # --- ROBUST ERROR HANDLING ---
+        try:
+            # Try to get a simple error message.
+            error_message = str(e)
+            if "RecursionError" in traceback.format_exc():
+                 error_message = "A critical communication error occurred with Google APIs."
+        except Exception:
+            error_message = "An unreportable error occurred."
         return jsonify({"error": error_message}), 500
 
 @app.route('/api/submit', methods=['POST'])
@@ -87,7 +94,13 @@ def submit_form():
         if new_row_index:
             google_provider.delete_row(config.DATA_ENTRY_SHEET_NAME, new_row_index)
         traceback.print_exc()
-        error_message = str(e)
+        # --- ROBUST ERROR HANDLING ---
+        try:
+            error_message = str(e)
+            if "RecursionError" in traceback.format_exc():
+                 error_message = "A critical communication error occurred with Google APIs during submission."
+        except Exception:
+            error_message = "An unreportable error occurred during submission."
         return jsonify({"status": "error", "message": error_message}), 500
 
 @app.route('/api/handle_approval', methods=['GET'])
@@ -140,9 +153,9 @@ def handle_approval():
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, new_status)
             if creator_email:
                 subject = f"[DITOLAK] Pengajuan RAB Proyek: {jenis_toko}"
-                body = f"<p>Yth. Bapak/Ibu,</p><p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b> oleh {rejected_by_level} ({approver}).</p><p>Silakan buka kembali form, masukkan kode toko yang sama untuk memuat ulang data terakhir, lakukan revisi, dan kirim ulang jika diperlukan.</p>"
+                body = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di lokasi <b>{kode_toko}</b> telah <b>DITOLAK</b>.</p>"
                 google_provider.send_email(to=creator_email, subject=subject, html_body=body)
-            return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui menjadi ditolak.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
+            return render_template('response_page.html', title='Permintaan Ditolak', message='Status permintaan telah diperbarui.', theme_color='#dc3545', icon='✖', logo_url=logo_url)
 
         elif level == 'coordinator' and action == 'approve':
             google_provider.update_cell(row, config.COLUMN_NAMES.STATUS, config.STATUS.WAITING_FOR_MANAGER)
@@ -189,7 +202,7 @@ def handle_approval():
                     cc_list.remove(creator_email)
                 
                 subject = f"[FINAL - DISETUJUI] Pengajuan RAB Proyek: {jenis_toko}"
-                email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p><p>Dokumen final terlampir untuk arsip.</p><p>Link PDF di Google Drive: {final_pdf_link}</p>"
+                email_body_html = f"<p>Pengajuan RAB untuk proyek <b>{jenis_toko}</b> di cabang <b>{cabang}</b> telah disetujui sepenuhnya.</p>"
                 
                 google_provider.send_email(
                     to=creator_email,
@@ -204,7 +217,12 @@ def handle_approval():
 
     except Exception as e:
         traceback.print_exc()
-        error_message = str(e)
+        try:
+            error_message = str(e)
+            if "RecursionError" in traceback.format_exc():
+                 error_message = "A critical communication error occurred with Google APIs."
+        except Exception:
+            error_message = "An unreportable error occurred."
         return render_template('response_page.html', title='Internal Error', message=f'An internal error occurred.<br><small>Details: {error_message}</small>', theme_color='#dc3545', icon='⚠️', logo_url=logo_url), 500
 
 if __name__ == '__main__':
