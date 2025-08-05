@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loginMessage = document.getElementById('login-message');
 
     // URL ini HANYA untuk mengambil daftar user, JANGAN diubah.
-    const APPS_SCRIPT_LOGIN_DATA_URL = "https://script.google.com/macros/s/AKfycbzdl_VfkasiwPqTj7gHw_TDHnBpN30ia_LzEvC3yIa-RoWHDAgjUUqRuddBi9NGKFB7Dw/exec";
+    const APPS_SCRIPT_LOGIN_DATA_URL = "https://script.google.com/macros/s/AKfycbwLIE9QfN0Lf1bJBff0bdf5-jxejXifPp8Rgmm11BfI65YyS7p2ROJbeDNQ1udmDysN/exec";
 
     // Fungsi untuk mengambil data login dari Google Apps Script
     async function fetchLoginData() {
